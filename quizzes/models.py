@@ -1,48 +1,59 @@
 # quizzes/models.py
-
 from django.db import models
 from users.models import User
-from courses.models import Module, Chapter
-
-QUIZ_TYPE_CHOICES = (
-    ('qcm', 'Multiple Choice'),
-    ('free', 'Free Answer'),
-)
+from courses.models import Module, Chapitre
 
 class Quiz(models.Model):
-    title = models.CharField(max_length=255)
-    description = models.TextField(blank=True, null=True)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='quizzes_created')
-    # The quiz can be linked to a module or a specific chapter.
-    module = models.ForeignKey(Module, on_delete=models.SET_NULL, null=True, blank=True, related_name='quizzes')
-    chapter = models.ForeignKey(Chapter, on_delete=models.SET_NULL, null=True, blank=True, related_name='quizzes')
+    QUIZ_TYPE_CHOICES = (
+        ('qcm', 'Multiple Choice (QCM)'),
+        ('free', 'Free Answer'),
+    )
+
+    CREATION_MODE_CHOICES = (
+        ('manual', 'Created Manually'),
+        ('ai', 'Created by AI'),
+    )
+
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    duration = models.IntegerField(help_text="Duration in minutes")
+    module = models.ForeignKey(Module, on_delete=models.CASCADE)
+    chapter = models.ForeignKey(Chapitre, on_delete=models.CASCADE, null=True, blank=True)
+    type = models.CharField(max_length=10, choices=QUIZ_TYPE_CHOICES, default='qcm')
+    created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    creation_mode = models.CharField(max_length=10, choices=CREATION_MODE_CHOICES, default='manual')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
 
+    def calculate_score(self, user_answers):
+        score = 0
+        questions = self.questions.all()
+
+        for question in questions:
+            correct_answers = question.answers.filter(is_correct=True)
+            correct_ids = set(correct_answers.values_list('id', flat=True))
+            user_ids = set(user_answers.get(str(question.id), []))
+
+            if correct_ids == user_ids:
+                score += 1  # Or use weighted scoring
+
+        return score
+
+
 class Question(models.Model):
-    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
-    question_text = models.TextField()
-    question_type = models.CharField(max_length=10, choices=QUIZ_TYPE_CHOICES)
-    order = models.PositiveIntegerField(default=0)
+    quiz = models.ForeignKey(Quiz, related_name='questions', on_delete=models.CASCADE)
+    text = models.TextField()
 
     def __str__(self):
-        return self.question_text
+        return f"{self.quiz.title} - {self.text[:50]}"
+
 
 class Answer(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='answers')
-    answer_text = models.CharField(max_length=255)
+    question = models.ForeignKey(Question, related_name='answers', on_delete=models.CASCADE)
+    text = models.CharField(max_length=300)
     is_correct = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.answer_text
-
-class QuizSubmission(models.Model):
-    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='submissions')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='quiz_submissions')
-    submitted_at = models.DateTimeField(auto_now_add=True)
-    score = models.FloatField(null=True, blank=True)
-
-    def __str__(self):
-        return f"Submission by {self.user.username} for {self.quiz.title}"
+        return self.text

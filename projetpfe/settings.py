@@ -20,7 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-x4%61+7qw2p#0(58)#3-i#y2par+j0#&=@9(%h%mbm6s@mhq_f'
+SECRET_KEY = 'django-insecure-%xg@b2o0y^#kmh5qdxz4(m472kp^ujff$_65zs6og1i6=-*q6n'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -37,14 +37,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'users',
-    'courses',
-    'resources',
-    'quizzes',
-    'profiles',
-    'ai',
-    'programs',
-    'resume'
 ]
 
 MIDDLEWARE = [
@@ -83,17 +75,11 @@ WSGI_APPLICATION = 'projetpfe.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'projectdb',  # Database name
-        'USER': 'admin',  # Database user
-        'PASSWORD': 'adminpassword',  # Replace with your database password
-        'HOST': 'localhost',  # Default: 'localhost', change if needed
-        'PORT': '5432',  # Default PostgreSQL port
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
-
-AUTH_USER_MODEL = 'users.User'
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
