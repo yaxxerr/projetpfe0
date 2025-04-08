@@ -1,7 +1,7 @@
 # quizzes/models.py
 from django.db import models
 from users.models import User
-from courses.models import Module, Chapitre
+from courses.models import Module, Chapter
 
 class Quiz(models.Model):
     QUIZ_TYPE_CHOICES = (
@@ -18,7 +18,7 @@ class Quiz(models.Model):
     description = models.TextField()
     duration = models.IntegerField(help_text="Duration in minutes")
     module = models.ForeignKey(Module, on_delete=models.CASCADE)
-    chapter = models.ForeignKey(Chapitre, on_delete=models.CASCADE, null=True, blank=True)
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, null=True, blank=True)
     type = models.CharField(max_length=10, choices=QUIZ_TYPE_CHOICES, default='qcm')
     created_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
     creation_mode = models.CharField(max_length=10, choices=CREATION_MODE_CHOICES, default='manual')
@@ -29,16 +29,12 @@ class Quiz(models.Model):
 
     def calculate_score(self, user_answers):
         score = 0
-        questions = self.questions.all()
-
-        for question in questions:
-            correct_answers = question.answers.filter(is_correct=True)
-            correct_ids = set(correct_answers.values_list('id', flat=True))
-            user_ids = set(user_answers.get(str(question.id), []))
-
+        for question in self.questions.all():
+            correct_answers = question['answers'].filter(is_correct=True)
+            correct_ids = set(ans.id for ans in correct_answers)
+            user_ids = set(user_answers.get(str(question['id']), []))
             if correct_ids == user_ids:
-                score += 1  # Or use weighted scoring
-
+                score += 1
         return score
 
 

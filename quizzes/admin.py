@@ -1,26 +1,18 @@
+import nested_admin
 from django.contrib import admin
 from .models import Quiz, Question, Answer
 
-class AnswerInline(admin.TabularInline):
+class AnswerInline(nested_admin.NestedTabularInline):
     model = Answer
-    extra = 1
+    extra = 2
 
-class QuestionInline(admin.TabularInline):
+class QuestionInline(nested_admin.NestedStackedInline):
     model = Question
+    inlines = [AnswerInline]
     extra = 1
 
-@admin.register(Quiz)
-class QuizAdmin(admin.ModelAdmin):
-    list_display = ('title', 'type', 'module', 'chapter', 'created_by', 'creation_mode', 'created_at')
-    list_filter = ('type', 'creation_mode', 'module')
-    search_fields = ('title',)
+class QuizAdmin(nested_admin.NestedModelAdmin):
     inlines = [QuestionInline]
+    list_display = ('title', 'type', 'module', 'chapter', 'created_by', 'creation_mode', 'created_at')
 
-@admin.register(Question)
-class QuestionAdmin(admin.ModelAdmin):
-    list_display = ('quiz', 'text')
-    inlines = [AnswerInline]
-
-@admin.register(Answer)
-class AnswerAdmin(admin.ModelAdmin):
-    list_display = ('question', 'text', 'is_correct')
+admin.site.register(Quiz, QuizAdmin)
