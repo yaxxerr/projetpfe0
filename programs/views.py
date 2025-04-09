@@ -3,3 +3,5 @@ from django.http import HttpResponse
 # Create your views here.
 def index(request):
     return HttpResponse("Welcome to programs-endpoint")
+def program_view(request):
+    return HttpResponse("programs-endpoint")

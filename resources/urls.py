@@ -3,5 +3,6 @@ from . import views
 
 urlpatterns = [
     path('', views.index, name='resources-home'),
-    # add other paths here
+    path('resources/', views.resource_view, name='resources-endpoint'),
+    path('access-requests/', views.access_request_view, name='access-requests-endpoint'),
 ]
