@@ -43,7 +43,8 @@ INSTALLED_APPS = [
     'programs',
     'quizzes',
     'resources',
-    'nested_admin'
+    'nested_admin',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
