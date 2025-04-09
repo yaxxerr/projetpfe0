@@ -1,8 +1,10 @@
-# ai/models.py
 from django.db import models
 from users.models import User
 from quizzes.models import Quiz
 from courses.models import Module
+from notifications.models import Notification
+from datetime import timedelta
+
 
 class ChatbotMessage(models.Model):
     user = models.ForeignKey(User, related_name='chatbot_messages', on_delete=models.CASCADE)
@@ -13,6 +15,16 @@ class ChatbotMessage(models.Model):
     def __str__(self):
         return f"Chat with {self.user.username} at {self.timestamp}"
 
+    def save(self, *args, **kwargs):
+        creating = self._state.adding
+        super().save(*args, **kwargs)
+
+        if creating:
+            Notification.objects.create(
+                recipient=self.user,
+                message="💬 The AI chatbot has replied to your message."
+            )
+
 
 class GeneratedQuiz(models.Model):
     user = models.ForeignKey(User, related_name='generated_quizzes', on_delete=models.CASCADE)
@@ -21,6 +33,16 @@ class GeneratedQuiz(models.Model):
 
     def __str__(self):
         return f"Quiz '{self.quiz.title}' generated for {self.user.username}"
+
+    def save(self, *args, **kwargs):
+        creating = self._state.adding
+        super().save(*args, **kwargs)
+
+        if creating:
+            Notification.objects.create(
+                recipient=self.user,
+                message=f"🧠 A quiz titled '{self.quiz.title}' was generated based on your learning progress."
+            )
 
 
 class ProgramRecommendation(models.Model):
@@ -31,6 +53,24 @@ class ProgramRecommendation(models.Model):
     def __str__(self):
         return f"Program recommendation for {self.user.username}"
 
+    def save(self, *args, **kwargs):
+        creating = self._state.adding
+        super().save(*args, **kwargs)
+
+        if creating:
+            modules = ", ".join([m.name for m in self.recommended_modules.all()])
+            Notification.objects.create(
+                recipient=self.user,
+                message=f"📘 A new AI-powered study program has been created for you. Focus on: {modules}."
+            )
+
+            first = self.recommended_modules.first()
+            if first:
+                Notification.objects.create(
+                    recipient=self.user,
+                    message=f"👉 Start with module: {first.name}"
+                )
+
 
 class PerformanceTracking(models.Model):
     user = models.ForeignKey(User, related_name='performance_trackings', on_delete=models.CASCADE)
@@ -40,4 +80,32 @@ class PerformanceTracking(models.Model):
     tracked_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Performance tracking for {self.user.username} at {self.tracked_at}"
+        return f"Performance for {self.user.username} at {self.tracked_at}"
+
+    def save(self, *args, **kwargs):
+        creating = self._state.adding
+        super().save(*args, **kwargs)
+
+        if creating:
+            total_minutes = round(self.platform_time.total_seconds() / 60)
+
+            Notification.objects.create(
+                recipient=self.user,
+                message=f"📊 Performance updated. You spent {total_minutes} minutes on the platform today."
+            )
+
+            weak = self.weak_modules.all()
+            if weak.exists():
+                weak_list = ", ".join([m.name for m in weak])
+                Notification.objects.create(
+                    recipient=self.user,
+                    message=f"⚠️ You’re struggling with: {weak_list}. Review these modules or try a practice quiz."
+                )
+
+            strong = self.strong_modules.all()
+            if strong.exists():
+                strong_list = ", ".join([m.name for m in strong])
+                Notification.objects.create(
+                    recipient=self.user,
+                    message=f"💪 You're doing great in: {strong_list}. Keep it up!"
+                )
