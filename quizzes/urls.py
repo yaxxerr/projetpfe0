@@ -19,6 +19,6 @@ urlpatterns = [
     path('answers/', views.answer_view, name='answers-endpoint'),
     path('<int:pk>/', QuizDetailView.as_view(), name='quiz-detail'),
     path('', QuizListCreateView.as_view(), name='quiz-list-create'),
-    path('submissions/', QuizSubmissionListView.as_view(), name='submission-list')
+    
     
 ]

@@ -1,10 +1,16 @@
 from django.urls import path
 from . import views
+from .views import (
+    ChatbotMessageListCreateView,
+    GeneratedQuizListCreateView,
+    ProgramRecommendationListCreateView,
+    PerformanceTrackingListCreateView,
+)
 
 urlpatterns = [
     path('', views.index, name='ai-home'),
-    path('chatbot-messages/', views.chatbot_messages_view, name='chatbot-messages'),
-    path('generated-quizzes/', views.generated_quizzes_view, name='generated-quizzes'),
-    path('program-recommendations/', views.program_recommendations_view, name='program-recommendations'),
-    path('performance-tracking/', views.performance_tracking_view, name='performance-tracking'),
+    path('chatbot/', ChatbotMessageListCreateView.as_view(), name='chatbot-messages'),                   # GET + POST
+    path('generated-quizzes/', GeneratedQuizListCreateView.as_view(), name='generated-quizzes'),         # GET + POST
+    path('program-recommendations/', ProgramRecommendationListCreateView.as_view(), name='program-ai'),  # GET + POST
+    path('performance-tracking/', PerformanceTrackingListCreateView.as_view(), name='performance-ai'),   # GET + POST
 ]
