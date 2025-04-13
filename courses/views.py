@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from rest_framework import generics
+from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from .models import Speciality, Level, Module, Chapter
 from .serializers import SpecialitySerializer, LevelSerializer, ModuleSerializer, ChapterSerializer
@@ -39,13 +40,13 @@ class ChapterListCreateView(generics.ListCreateAPIView):
 class ResourceListCreateView(generics.ListCreateAPIView):
     queryset = Resource.objects.all()
     serializer_class = ResourceSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
 
 class AccessRequestListCreateView(generics.ListCreateAPIView):
     queryset = AccessRequest.objects.all()
     serializer_class = AccessRequestSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
 
 
 #get only
