@@ -1,6 +1,5 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from courses.models import Module, Level, Speciality
 from notifications.models import Notification
 
 class User(AbstractUser):
@@ -13,9 +12,9 @@ class User(AbstractUser):
     profile_photo = models.ImageField(upload_to='profiles/', null=True, blank=True)
     bio = models.TextField(blank=True)
     background = models.TextField(blank=True)
-    level = models.ForeignKey(Level, on_delete=models.SET_NULL, null=True, blank=True)
-    speciality = models.ForeignKey(Speciality, on_delete=models.SET_NULL, null=True, blank=True)
-    modules = models.ManyToManyField(Module, blank=True)
+    modules = models.ManyToManyField('courses.Module', blank=True)
+    speciality = models.ForeignKey('courses.Speciality', on_delete=models.SET_NULL, null=True, blank=True)
+    level = models.ForeignKey('courses.Level', on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f"{self.username} ({self.user_type})"
@@ -31,6 +30,7 @@ class User(AbstractUser):
         super().save(*args, **kwargs)
 
         if self.is_student() and self.level and self.speciality:
+            from courses.models import Module  # ⬅️ FIXED circular import here
             modules = Module.objects.filter(level=self.level, speciality=self.speciality)
             self.modules.set(modules)
 

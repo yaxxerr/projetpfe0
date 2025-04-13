@@ -42,7 +42,6 @@ INSTALLED_APPS = [
     'users',
     'programs',
     'quizzes',
-    'resources',
     'nested_admin',
     'rest_framework',
     'notifications'
