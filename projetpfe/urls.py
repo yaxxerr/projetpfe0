@@ -1,7 +1,7 @@
 
 from django.contrib import admin
 from django.urls import path, include
-
+from django.contrib.auth import views as auth_views
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView, )
@@ -23,6 +23,6 @@ urlpatterns = [
     path('api/courses/', include('courses.urls')),
     path('api/ai/', include('ai.urls')),
     path('api/notifications/', include('notifications.urls')),
-
+    path('api-auth/', include('rest_framework.urls')),
 ]
 

@@ -5,7 +5,7 @@ from .models import Speciality, Level, Module, Chapter, Resource
 class ResourceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Resource
-        fields = ['id', 'name', 'resource_type', 'link', 'is_private']
+        fields = '__all__'
 
 class ChapterSerializer(serializers.ModelSerializer):
     resources = ResourceSerializer(many=True, read_only=True)

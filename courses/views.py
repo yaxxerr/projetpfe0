@@ -47,9 +47,3 @@ class AccessRequestListCreateView(generics.ListCreateAPIView):
     queryset = AccessRequest.objects.all()
     serializer_class = AccessRequestSerializer
     permission_classes = [IsAuthenticated]
-
-
-#get only
-class SpecialityHierarchyView(ListAPIView):
-    queryset = Speciality.objects.all()
-    serializer_class = SpecialitySerializer
