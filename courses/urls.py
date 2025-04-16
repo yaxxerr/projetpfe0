@@ -2,7 +2,7 @@ from django.urls import path
 from . import views
 from .views import SpecialityListCreateView, LevelListCreateView, ModuleListCreateView, ChapterListCreateView
 from django.urls import path
-from .views import ResourceListCreateView, AccessRequestListCreateView
+from .views import ResourceListCreateView, AccessRequestListCreateView,CourseSearchView
 
 urlpatterns = [
     path('', views.index, name='courses-home'),
@@ -12,4 +12,5 @@ urlpatterns = [
     path('chapters/', ChapterListCreateView.as_view(), name='chapter-list-create'),
     path('resources/', ResourceListCreateView.as_view(), name='resource-list-create'),
     path('resources/access-requests/', AccessRequestListCreateView.as_view(), name='access-request-list-create'),
+    path('search/', CourseSearchView.as_view(), name='course-search')
 ]

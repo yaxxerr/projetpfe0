@@ -1,6 +1,14 @@
 from rest_framework import serializers
 from .models import Resource, AccessRequest
 from .models import Speciality, Level, Module, Chapter, Resource
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+class UserSearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'user_type']
 
 class ResourceSerializer(serializers.ModelSerializer):
     class Meta:
