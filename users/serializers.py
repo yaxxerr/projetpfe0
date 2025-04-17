@@ -41,3 +41,9 @@ class UserSerializer(serializers.ModelSerializer):
             'user_type', 'level', 'speciality', 'profile_photo',
             'bio', 'modules'
         ]
+        read_only_fields = ['id', 'username', 'email', 'user_type']
+
+class StudentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'speciality', 'level', 'profile_photo']
