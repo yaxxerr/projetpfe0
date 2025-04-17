@@ -1,6 +1,11 @@
 
 import dj_database_url
 from pathlib import Path
+from decouple import config
+
+DEEPSEEK_API_KEY = "sk-ca9752f4b4cc494593112f8242a279c4"
+DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"  # Verify the correct endpoint
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent

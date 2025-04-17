@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from .serializers import UserSerializer, RegisterSerializer
 from django.contrib.auth import get_user_model
 
+
 #simple message
 def index(request):
     return HttpResponse("Welcome to users-endpoint")
