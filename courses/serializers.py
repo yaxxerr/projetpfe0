@@ -36,14 +36,6 @@ class LevelSerializer(serializers.ModelSerializer):
         model = Level
         fields = ['id', 'name', 'description', 'module_set']
 
-class SpecialityHierarchySerializer(serializers.ModelSerializer):
-    level_set = LevelSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Speciality
-        fields = ['id', 'name', 'description', 'level_set']
-
-
 class AccessRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = AccessRequest

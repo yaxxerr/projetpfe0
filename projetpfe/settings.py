@@ -1,7 +1,7 @@
 
 import dj_database_url
 from pathlib import Path
-from decouple import config
+
 
 DEEPSEEK_API_KEY = "sk-ca9752f4b4cc494593112f8242a279c4"
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"  # Verify the correct endpoint
@@ -131,3 +131,16 @@ REST_FRAMEWORK = {
     )
 }
 
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=24),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": True,
+
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+}
