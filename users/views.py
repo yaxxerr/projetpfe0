@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from .models import User
-from .serializers import StudentSerializer, UserBasicSerializer
+from .serializers import StudentSerializer, UserBasicSerializer,UserSerializer, RegisterSerializer, UserUpdateSerializer
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from rest_framework.permissions import AllowAny
@@ -9,7 +9,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import UserSerializer, RegisterSerializer
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -143,3 +142,12 @@ class MyModulesView(APIView):
         modules = user.modules.all()
         serializer = ModuleSerializer(modules, many=True)
         return Response(serializer.data)
+
+
+
+class UpdateMyProfileView(generics.UpdateAPIView):
+    serializer_class = UserUpdateSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
