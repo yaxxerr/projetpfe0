@@ -64,8 +64,12 @@ class Chapter(models.Model):
 
 class Resource(models.Model):
     RESOURCE_TYPE_CHOICES = (
-        ('pdf', 'PDF Document'),
-        ('video', 'Video'),
+        ('cours-pdf', 'cours-pdf'),
+        ('cours-video', 'cours-video'),
+        ('td-pdf', 'td-pdf'),
+        ('td-video', 'td-video'),
+        ('tp-pdf', 'tp-pdf'),
+        ('tp-video', 'tp-video')
     )
 
     ACCESS_TYPE_CHOICES = (
@@ -74,7 +78,7 @@ class Resource(models.Model):
     )
 
     name = models.CharField(max_length=200)
-    resource_type = models.CharField(max_length=10, choices=RESOURCE_TYPE_CHOICES)
+    resource_type = models.CharField(max_length=20, choices=RESOURCE_TYPE_CHOICES)
     link = models.URLField()
     chapter = models.ForeignKey('Chapter', related_name='resources', on_delete=models.CASCADE)
     owner = models.ForeignKey(User, related_name='owned_resources', on_delete=models.CASCADE)

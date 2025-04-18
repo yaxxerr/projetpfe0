@@ -16,6 +16,20 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 from users.serializers import UserBasicSerializer
+# courses/views.py
+
+from rest_framework import generics, permissions
+from .models import Resource
+from .serializers import ResourceSerializer
+
+class ResourceByTypeView(generics.ListAPIView):
+    serializer_class = ResourceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        res_type = self.kwargs.get('type')
+        return Resource.objects.filter(resource_type=res_type)
+
 
 
 

@@ -2,7 +2,7 @@ from django.urls import path
 from . import views
 from .views import SpecialityListCreateView, LevelListCreateView, ModuleListCreateView, ChapterListCreateView, ModuleSearchView, ChapterSearchView, ResourceSearchView
 from django.urls import path
-from .views import ResourceListCreateView, AccessRequestListCreateView
+from .views import ResourceListCreateView, AccessRequestListCreateView,ResourceByTypeView
 
 
 urlpatterns = [
@@ -15,5 +15,6 @@ urlpatterns = [
     path('resources/access-requests/', AccessRequestListCreateView.as_view(), name='access-request-list-create'),
     path('search/modules/', ModuleSearchView.as_view(), name='search-modules'),
     path('search/chapters/', ChapterSearchView.as_view(), name='search-chapters'),
+    path('resources/<str:type>/', ResourceByTypeView.as_view(), name='resource-by-type'),
     path('search/resources/', ResourceSearchView.as_view(), name='search-resources'),
 ]
