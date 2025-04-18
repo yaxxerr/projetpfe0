@@ -5,6 +5,7 @@ from django.contrib.auth import views as auth_views
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView, )
+from .views import CourseSearchView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -24,5 +25,7 @@ urlpatterns = [
     path('api/ai/', include('ai.urls')),
     path('api/notifications/', include('notifications.urls')),
     path('api-auth/', include('rest_framework.urls')),
+    path('search/', CourseSearchView.as_view(), name='course-search'),
+
 ]
 

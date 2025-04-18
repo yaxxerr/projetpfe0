@@ -1,8 +1,8 @@
 from django.urls import path
 from . import views
-from .views import SpecialityListCreateView, LevelListCreateView, ModuleListCreateView, ChapterListCreateView
+from .views import SpecialityListCreateView, LevelListCreateView, ModuleListCreateView, ChapterListCreateView, ModuleSearchView, ChapterSearchView, ResourceSearchView
 from django.urls import path
-from .views import ResourceListCreateView, AccessRequestListCreateView,CourseSearchView
+from .views import ResourceListCreateView, AccessRequestListCreateView
 
 
 urlpatterns = [
@@ -13,5 +13,7 @@ urlpatterns = [
     path('chapters/', ChapterListCreateView.as_view(), name='chapter-list-create'),
     path('resources/', ResourceListCreateView.as_view(), name='resource-list-create'),
     path('resources/access-requests/', AccessRequestListCreateView.as_view(), name='access-request-list-create'),
-    path('search/', CourseSearchView.as_view(), name='course-search')
+    path('search/modules/', ModuleSearchView.as_view(), name='search-modules'),
+    path('search/chapters/', ChapterSearchView.as_view(), name='search-chapters'),
+    path('search/resources/', ResourceSearchView.as_view(), name='search-resources'),
 ]

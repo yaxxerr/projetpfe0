@@ -50,3 +50,15 @@ class SpecialitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Speciality
         fields = ['id', 'name', 'description', 'levels']
+
+        # courses/serializers.py
+
+class ModuleSimpleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Module
+        fields = ['id', 'name', 'description', 'speciality', 'level']
+
+class ChapterSimpleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Chapter
+        fields = ['id', 'name', 'module']

@@ -1,9 +1,11 @@
 from django.shortcuts import render
 from .models import User
-from .serializers import StudentSerializer
+from .serializers import StudentSerializer, UserBasicSerializer
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from rest_framework.permissions import AllowAny
 from rest_framework import generics, permissions
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -11,7 +13,7 @@ from .serializers import UserSerializer, RegisterSerializer
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
+from courses.serializers import ModuleSerializer
 
 #simple message
 def index(request):
@@ -102,3 +104,42 @@ class StudentSearchView(generics.ListAPIView):
             Q(first_name__icontains=query) |
             Q(last_name__icontains=query)
         )
+
+
+class ProfessorSearchView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        query = request.GET.get("q", "")
+        professors = User.objects.filter(user_type='professor', username__icontains=query)
+        return Response(UserBasicSerializer(professors, many=True).data)
+
+
+
+class UserSearchView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        query = request.GET.get('q', '')
+        users = User.objects.filter(username__icontains=query)
+
+        data = [
+            {
+                "id": user.id,
+                "username": user.username,
+                "user_type": user.user_type,
+                "email": user.email,
+            }
+            for user in users
+        ]
+        return Response(data)
+
+
+class MyModulesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        modules = user.modules.all()
+        serializer = ModuleSerializer(modules, many=True)
+        return Response(serializer.data)

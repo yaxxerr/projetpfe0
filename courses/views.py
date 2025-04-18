@@ -1,10 +1,10 @@
 from django.shortcuts import render
 from django.http import HttpResponse
-from rest_framework import generics
+from rest_framework import generics, filters
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from .models import Speciality, Level, Module, Chapter
-from .serializers import SpecialitySerializer, LevelSerializer, ModuleSerializer, ChapterSerializer, UserSearchSerializer
+from .serializers import SpecialitySerializer, LevelSerializer, ModuleSerializer, ChapterSerializer, UserSearchSerializer, ModuleSimpleSerializer, ChapterSimpleSerializer
 from rest_framework import generics, permissions
 from .models import Resource, AccessRequest
 from .serializers import ResourceSerializer, AccessRequestSerializer
@@ -13,6 +13,10 @@ from rest_framework.generics import ListAPIView
 from django.contrib.auth import get_user_model
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter
+from users.serializers import UserBasicSerializer
+
 
 
 def index(request):
@@ -53,29 +57,26 @@ class AccessRequestListCreateView(generics.ListCreateAPIView):
 
 User = get_user_model()
 
-class CourseSearchView(APIView):
+
+# 🔍 Module Search View
+class ModuleSearchView(ListAPIView):
+    queryset = Module.objects.all()
+    serializer_class = ModuleSimpleSerializer
     permission_classes = [AllowAny]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_fields = ['speciality', 'level']  # optional filtering
+    search_fields = ['name']
 
-    def get(self, request):
-        query = request.query_params.get('q', '').strip()
+# 🔍 Chapter Search View
+class ChapterSearchView(generics.ListAPIView):
+    queryset = Chapter.objects.all()
+    serializer_class = ChapterSimpleSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name', 'module__name']
 
-        if not query:
-            return Response({
-                "users": [],
-                "modules": [],
-                "levels": [],
-                "specialities": []
-            })
-
-        users = User.objects.filter(username__icontains=query)[:5]
-        modules = Module.objects.filter(name__icontains=query)[:5]
-        levels = Level.objects.filter(name__icontains=query)[:5]
-        specialities = Speciality.objects.filter(name__icontains=query)[:5]
-
-        data = {
-            "users": UserSearchSerializer(users, many=True).data,
-            "modules": ModuleSerializer(modules, many=True).data,
-            "levels": LevelSerializer(levels, many=True).data,
-            "specialities": SpecialitySerializer(specialities, many=True).data,
-        }
-        return Response(data)
+# 🔍 Resource Search View
+class ResourceSearchView(generics.ListAPIView):
+    queryset = Resource.objects.all()
+    serializer_class = ResourceSerializer
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name', 'resource_type', 'chapter__name']
