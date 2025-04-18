@@ -4,6 +4,7 @@ from .views import SpecialityListCreateView, LevelListCreateView, ModuleListCrea
 from django.urls import path
 from .views import ResourceListCreateView, AccessRequestListCreateView,CourseSearchView
 
+
 urlpatterns = [
     path('', views.index, name='courses-home'),
     path('specialities/', SpecialityListCreateView.as_view(), name='speciality-endpoint'),
