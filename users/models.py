@@ -98,20 +98,32 @@ class Professor(User):
         )
         return quiz
 
-    def add_resource(self, name, res_type, link, chapter):
-        from resources.models import Resource
-        res = Resource.objects.create(
-            name=name,
-            resource_type=res_type,
-            link=link,
-            chapter=chapter,
-            owner=self
-        )
+def add_resource(self, name, res_type, link, chapter):
+    from courses.models import Resource
+    res = Resource.objects.create(
+        name=name,
+        resource_type=res_type,
+        link=link,
+        chapter=chapter,
+        owner=self
+    )
+    
+    # Notify the professor
+    Notification.objects.create(
+        recipient=self,
+        message=f"📎 Resource '{name}' was added."
+    )
+
+    # Notify all students following this professor
+    from .models import Follow
+    followers = Follow.objects.filter(professor=self)
+    for follow in followers:
         Notification.objects.create(
-            recipient=self,
-            message=f"📎 Resource '{name}' was added."
+            recipient=follow.student,
+            message=f"📥 {self.username} just posted a new resource: {name}"
         )
-        return res
+
+    return res  # ✅ Make sure this line is **inside** the function
 
 
 class StudentManager(models.Manager):
@@ -161,3 +173,21 @@ class Student(User):
             message="📊 Your performance has been recorded."
         )
         return perf
+
+class Follow(models.Model):
+    student = models.ForeignKey(User, related_name='following', on_delete=models.CASCADE)
+    professor = models.ForeignKey(User, related_name='followers', on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('student', 'professor')
+
+class Follow(models.Model):
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='following')
+    professor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='followers')
+    followed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('student', 'professor')
+
+    def __str__(self):
+        return f"{self.student.username} follows {self.professor.username}"

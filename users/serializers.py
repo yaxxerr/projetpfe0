@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from courses.models import Module
+from .models import Follow
 
 
 User = get_user_model()
@@ -53,3 +54,12 @@ class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['username','password', 'email', 'bio', 'background', 'profile_photo', 'speciality', 'level']
+
+
+from rest_framework import serializers
+from .models import Follow
+
+class FollowSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Follow
+        fields = ['id', 'student', 'professor', 'followed_at']

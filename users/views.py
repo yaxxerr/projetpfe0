@@ -1,6 +1,6 @@
 from django.shortcuts import render
-from .models import User
-from .serializers import StudentSerializer, UserBasicSerializer,UserSerializer, RegisterSerializer, UserUpdateSerializer
+from .models import User, Follow
+from .serializers import StudentSerializer,FollowSerializer, UserBasicSerializer,UserSerializer, RegisterSerializer, UserUpdateSerializer
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from rest_framework.permissions import AllowAny
@@ -151,3 +151,12 @@ class UpdateMyProfileView(generics.UpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class FollowProfessorView(generics.CreateAPIView):
+    queryset = Follow.objects.all()
+    serializer_class = FollowSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(student=self.request.user)
