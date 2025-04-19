@@ -18,13 +18,27 @@ from rest_framework.filters import SearchFilter
 from users.serializers import UserBasicSerializer
 
 
-class ResourceByTypeView(generics.ListAPIView):
-    serializer_class = ResourceSerializer
-    permission_classes = [permissions.IsAuthenticated]
+class ResourceSearchByChapterAndTypeView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        res_type = self.kwargs.get('type')
-        return Resource.objects.filter(resource_type=res_type)
+    def get(self, request):
+        chapter_name = request.query_params.get("chapter")
+        resource_type = request.query_params.get("type")
+
+        if not chapter_name or not resource_type:
+            return Response({"error": "Please provide both 'chapter' and 'type' as query parameters."}, status=400)
+
+        # Find chapters with matching name
+        matching_chapters = Chapter.objects.filter(name__icontains=chapter_name)
+
+        # Filter resources by chapter + resource type
+        resources = Resource.objects.filter(
+            chapter__in=matching_chapters,
+            resource_type=resource_type
+        )
+
+        serializer = ResourceSerializer(resources, many=True)
+        return Response(serializer.data)
 
 
 
