@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from .models import User, Follow
-from .serializers import StudentSerializer,FollowSerializer, UserBasicSerializer,UserSerializer, RegisterSerializer, UserUpdateSerializer
+from .serializers import StudentSerializer,AssignModulesSerializer,FollowSerializer, UserBasicSerializer,UserSerializer, RegisterSerializer, UserUpdateSerializer
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from rest_framework.permissions import AllowAny
@@ -13,6 +13,30 @@ from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from courses.serializers import ModuleSerializer
+
+
+from rest_framework.generics import GenericAPIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+
+from .serializers import AssignModulesSerializer
+
+class AssignModulesView(GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = AssignModulesSerializer
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            user = request.user
+            user.level = serializer.validated_data['level']
+            user.speciality = serializer.validated_data['speciality']
+            user.save()
+            user.assign_modules_to_student()
+            return Response({'success': 'Modules assigned successfully!'}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 #simple message
 def index(request):
@@ -160,3 +184,4 @@ class FollowProfessorView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(student=self.request.user)
+

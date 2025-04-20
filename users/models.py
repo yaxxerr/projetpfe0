@@ -29,32 +29,34 @@ class User(AbstractUser):
         creating = self._state.adding
         super().save(*args, **kwargs)
 
-        if self.is_student() and self.level and self.speciality:
-            from courses.models import Module  # ⬅️ FIXED circular import here
-            modules = Module.objects.filter(level=self.level, speciality=self.speciality)
-            self.modules.set(modules)
-
-            if creating:
-                Notification.objects.create(
-                    recipient=self,
-                    message="👋 Welcome to the platform! Modules for your level and specialty have been assigned."
-                )
-                if modules.exists():
-                    Notification.objects.create(
-                        recipient=self,
-                        message=f"📘 Start with: {modules.first().name}"
-                    )
-                else:
-                    Notification.objects.create(
-                        recipient=self,
-                        message="⚠️ No modules found for your profile. Please contact the admin."
-                    )
-
-        elif creating:
+        if creating:
             Notification.objects.create(
                 recipient=self,
                 message="👋 Welcome to the platform! Your profile has been successfully created."
             )
+
+    def assign_modules_to_student(self):
+        if self.is_student() and self.level and self.speciality:
+            from courses.models import Module  # Avoid circular import
+            modules = Module.objects.filter(level=self.level, speciality=self.speciality)
+            self.modules.set(modules)
+
+            Notification.objects.create(
+                recipient=self,
+                message="📘 Modules have been assigned based on your level and speciality."
+            )
+
+            if modules.exists():
+                Notification.objects.create(
+                    recipient=self,
+                    message=f"📘 Start with: {modules.first().name}"
+                )
+            else:
+                Notification.objects.create(
+                    recipient=self,
+                    message="⚠️ No modules found for your profile. Please contact the admin."
+                )
+
 
     def use_chatbot(self, message):
         from ai.models import ChatbotMessage
@@ -98,32 +100,27 @@ class Professor(User):
         )
         return quiz
 
-def add_resource(self, name, res_type, link, chapter):
-    from courses.models import Resource
-    res = Resource.objects.create(
-        name=name,
-        resource_type=res_type,
-        link=link,
-        chapter=chapter,
-        owner=self
-    )
-    
-    # Notify the professor
-    Notification.objects.create(
-        recipient=self,
-        message=f"📎 Resource '{name}' was added."
-    )
-
-    # Notify all students following this professor
-    from .models import Follow
-    followers = Follow.objects.filter(professor=self)
-    for follow in followers:
-        Notification.objects.create(
-            recipient=follow.student,
-            message=f"📥 {self.username} just posted a new resource: {name}"
+    def add_resource(self, name, res_type, link, chapter):
+        from courses.models import Resource
+        res = Resource.objects.create(
+            name=name,
+            resource_type=res_type,
+            link=link,
+            chapter=chapter,
+            owner=self
         )
-
-    return res  # ✅ Make sure this line is **inside** the function
+        Notification.objects.create(
+            recipient=self,
+            message=f"📎 Resource '{name}' was added."
+        )
+        from .models import Follow
+        followers = Follow.objects.filter(professor=self)
+        for follow in followers:
+            Notification.objects.create(
+                recipient=follow.student,
+                message=f"📥 {self.username} just posted a new resource: {name}"
+            )
+        return res
 
 
 class StudentManager(models.Manager):
@@ -174,12 +171,6 @@ class Student(User):
         )
         return perf
 
-class Follow(models.Model):
-    student = models.ForeignKey(User, related_name='following', on_delete=models.CASCADE)
-    professor = models.ForeignKey(User, related_name='followers', on_delete=models.CASCADE)
-
-    class Meta:
-        unique_together = ('student', 'professor')
 
 class Follow(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='following')

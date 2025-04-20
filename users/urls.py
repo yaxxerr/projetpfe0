@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views import user_list, user_detail,FollowProfessorView, register_user, LoginView, CurrentUserView, UserUpdateView, MyProfileView, StudentSearchView, ProfessorSearchView, UserSearchView, MyModulesView, UpdateMyProfileView
+from .views import user_list, user_detail,FollowProfessorView, register_user,AssignModulesView, LoginView, CurrentUserView, UserUpdateView, MyProfileView, StudentSearchView, ProfessorSearchView, UserSearchView, MyModulesView, UpdateMyProfileView
 
 
 urlpatterns = [
@@ -20,6 +20,7 @@ urlpatterns = [
     path("search/professors/", ProfessorSearchView.as_view(), name="search-professors"),
     path("search/", UserSearchView.as_view(), name="users-search"),
     path("my-modules/", MyModulesView.as_view(), name="users-modules"),
+     path('assign-my-modules/', AssignModulesView.as_view(), name='assign-my-modules'),
     path('follow/', FollowProfessorView.as_view(), name='follow-professor'),
 ]
 

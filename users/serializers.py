@@ -2,6 +2,12 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from courses.models import Module
 from .models import Follow
+from rest_framework import serializers
+from courses.models import Level, Speciality
+
+class AssignModulesSerializer(serializers.Serializer):
+    level = serializers.PrimaryKeyRelatedField(queryset=Level.objects.all())
+    speciality = serializers.PrimaryKeyRelatedField(queryset=Speciality.objects.all())
 
 
 User = get_user_model()
@@ -63,3 +69,6 @@ class FollowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Follow
         fields = ['id', 'student', 'professor', 'followed_at']
+
+
+
