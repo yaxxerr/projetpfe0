@@ -86,7 +86,17 @@ def register_user(request):
 
 # /login/
 class LoginView(TokenObtainPairView):
+    permission_classes = [AllowAny]
+    authentication_classes=[]
     serializer_class = TokenObtainPairSerializer
+    def post(self, request, *args, **kwargs):
+        print("✅ Data received from frontend:")
+        print(request.data)  # This will print {"username": "...", "password": "..."}
+
+        # Optional: You can also log headers or other meta data
+        # print(request.headers)
+
+        return super().post(request, *args, **kwargs)
 
 # /me/
 class CurrentUserView(APIView):
