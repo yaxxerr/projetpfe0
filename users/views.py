@@ -75,14 +75,13 @@ def user_detail(request, pk):
 
 
 #post apis
-@api_view(['POST'])
-def register_user(request):
-    serializer = RegisterSerializer(data=request.data)
-    if serializer.is_valid():
-        user = serializer.save()
-        return Response(UserSerializer(user).data, status=201)
-    return Response(serializer.errors, status=400)
-
+class RegisterView(APIView):
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({"message": "User registered successfully"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # /login/
 class LoginView(TokenObtainPairView):
