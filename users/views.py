@@ -19,8 +19,9 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-
+from rest_framework.generics import RetrieveAPIView
 from .serializers import AssignModulesSerializer
+from courses.models import Module
 
 class AssignModulesView(GenericAPIView):
     permission_classes = [IsAuthenticated]
@@ -77,6 +78,7 @@ def user_detail(request, pk):
 #post apis
 @api_view(['POST'])
 def register_user(request):
+    print(f"payload: ")
     serializer = RegisterSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
@@ -195,3 +197,7 @@ class FollowProfessorView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save(student=self.request.user)
 
+class ModuleDetailView(RetrieveAPIView):
+    queryset = Module.objects.all()
+    serializer_class = ModuleSerializer
+    permission_classes = [AllowAny]
