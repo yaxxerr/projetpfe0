@@ -13,9 +13,11 @@ class Speciality(models.Model):
 class Level(models.Model):
     name = models.CharField(max_length=50)
     description = models.TextField(blank=True)
+    speciality = models.ForeignKey('Speciality', on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.speciality.name})"
+
 
 
 class Module(models.Model):
