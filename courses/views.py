@@ -55,12 +55,11 @@ def index(request):
 class SpecialityListCreateView(generics.ListCreateAPIView):
     queryset = Speciality.objects.all()
     serializer_class = SpecialitySerializer
-    permission_classes = [IsAuthenticated]
-
+    permission_classes = [AllowAny]
 class LevelListCreateView(generics.ListCreateAPIView):
     queryset = Level.objects.all()
     serializer_class = LevelSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
 class ModuleListCreateView(generics.ListCreateAPIView):
     queryset = Module.objects.all()
