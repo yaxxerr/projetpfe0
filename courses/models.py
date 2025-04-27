@@ -29,6 +29,7 @@ class Module(models.Model):
     def __str__(self):
         return f"{self.name} ({self.speciality.name} - {self.level.name})"
 
+
     def save(self, *args, **kwargs):
         creating = self._state.adding
         super().save(*args, **kwargs)
