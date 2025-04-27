@@ -101,7 +101,7 @@ class ChapterSearchView(generics.ListAPIView):
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'module__name']
 
-# 🔍 Resource Search View
+# 🔍 Resource Search Vie
 class ResourceSearchView(generics.ListAPIView):
     queryset = Resource.objects.all()
     serializer_class = ResourceSerializer

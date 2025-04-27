@@ -19,7 +19,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'email', 'password',
+             'username', 'email', 'password',
             'user_type', 'level', 'speciality'
         ]
 
@@ -72,3 +72,10 @@ class FollowSerializer(serializers.ModelSerializer):
 
 
 
+class UserUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username', 'password', 'email', 'bio', 'background', 'profile_photo', 'speciality', 'level']
+        extra_kwargs = {
+            'password': {'write_only': True, 'required': False},
+        }
