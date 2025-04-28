@@ -147,3 +147,18 @@ CORS_ALLOW_METHODS = [
     "POST",
     "PUT",
 ]
+
+INSTALLED_APPS += [
+    "channels",
+]
+
+ASGI_APPLICATION = "projetpfe.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}

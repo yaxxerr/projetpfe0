@@ -20,7 +20,7 @@ from quizzes.models import Quiz, Question, Answer
 from courses.models import Module, Chapter
 
 # Load environment variables or fallback values
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "your-real-api-key")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "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")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_MODEL = "meta-llama/llama-4-maverick:free"
 
