@@ -4,7 +4,7 @@ from pathlib import Path
 import os
 
 # settings.py
-OPENROUTER_API_KEY = 'b5c74f37579d17d51e2cfea3bc492c7d05c860736f04184cc9d6f78254d07d24'
+OPENROUTER_API_KEY = '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'
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent

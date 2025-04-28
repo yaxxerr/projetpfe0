@@ -1,11 +1,8 @@
 from django.http import HttpResponse
 from rest_framework import generics, permissions
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from django.utils import timezone
-import random
 import requests
-from django.conf import settings
+import random
+import os
 
 from .models import (
     ChatbotMessage,
@@ -20,109 +17,174 @@ from .serializers import (
     PerformanceTrackingSerializer
 )
 from quizzes.models import Quiz, Question, Answer
-from courses.models import Module
+from courses.models import Module, Chapter
 
-OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_API_KEY = "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"
-OPENROUTER_MODEL = "mistralai/mistral-7b-instruct"
+# Load environment variables or fallback values
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "your-real-api-key")
+OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+OPENROUTER_MODEL = "meta-llama/llama-4-maverick:free"
+
+# --- Basic debug endpoints ---
+def index(request):
+    return HttpResponse("Welcome to the AI Endpoints 🎯")
+
+def chatbot_messages_view(request):
+    return HttpResponse("Chatbot Messages Endpoint 🔥")
+
+def generated_quizzes_view(request):
+    return HttpResponse("Generated Quizzes Endpoint 🧠")
+
+def program_recommendations_view(request):
+    return HttpResponse("Program Recommendations Endpoint 📚")
+
+def performance_tracking_view(request):
+    return HttpResponse("Performance Tracking Endpoint 📈")
 
 
-def index(request): return HttpResponse("Welcome to Ai-endpoint")
-def chatbot_messages_view(request): return HttpResponse("chatbot-messages-endpoint")
-def generated_quizzes_view(request): return HttpResponse("generated-quizzes-endpoint")
-def program_recommendations_view(request): return HttpResponse("program-recommendations-endpoint")
-def performance_tracking_view(request): return HttpResponse("performance-tracking-endpoint")
-
-
-# 💬 Chatbot messages using OpenRouter
+# 💬 Chatbot API
 class ChatbotMessageListCreateView(generics.ListCreateAPIView):
     queryset = ChatbotMessage.objects.all()
     serializer_class = ChatbotMessageSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        user_input = serializer.validated_data['user_message'].strip()
-        bot_reply = self.generate_response_with_openrouter(user_input)
-        serializer.save(user=self.request.user, bot_response=bot_reply)
+        user_message = serializer.validated_data['user_message']
+        bot_response = self.ask_openrouter(f"Answer clearly: {user_message}")
+        serializer.save(user=self.request.user, bot_response=bot_response)
 
-    def generate_response_with_openrouter(self, prompt):
+    def ask_openrouter(self, message):
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": OPENROUTER_MODEL,
+            "messages": [
+                {"role": "system", "content": "You are a helpful and knowledgeable educational assistant."},
+                {"role": "user", "content": message},
+            ],
+        }
         try:
-            headers = {
-                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                "Content-Type": "application/json"
-            }
-            data = {
-                "model": OPENROUTER_MODEL,
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.7
-            }
-            response = requests.post(OPENROUTER_API_URL, json=data, headers=headers)
+            response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=20)
             response.raise_for_status()
-            return response.json()['choices'][0]['message']['content']
-        except Exception as e:
-            return f"⚠️ AI Error: {str(e)}"
+            return response.json()['choices'][0]['message']['content'].strip()
+        except requests.exceptions.RequestException as e:
+            print(f"[OpenRouter Chatbot Error] {e}")
+            return "Error contacting AI service."
 
 
-# 🧠 Auto-Generate Quiz (with AI-powered questions)
+# 🧠 Quiz Generation API
 class GeneratedQuizListCreateView(generics.ListCreateAPIView):
     queryset = GeneratedQuiz.objects.all()
     serializer_class = GeneratedQuizSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
+        validated_data = serializer.validated_data
         user = self.request.user
-        module = random.choice(Module.objects.all())
+        module = validated_data['module']
+        chapters = validated_data['chapters']
+        difficulty = validated_data['difficulty']
+        quiz_type = validated_data['quiz_type']
 
-        quiz = Quiz.objects.create(
-            title=f"AI Quiz for {module.name}",
-            description="This quiz was generated with AI.",
-            duration=20,
-            module=module,
-            type="qcm",
-            created_by=user
+        if not module or not chapters:
+            raise ValueError("Module and Chapters are required.")
+
+        chapter_names = ", ".join([chapter.name for chapter in chapters])
+
+        prompt = (
+            f"Generate a 15-question {quiz_type.upper()} quiz for the module '{module.name}', "
+            f"covering the chapters: {chapter_names}. "
+            f"Difficulty: {difficulty}/5. "
+            "For each question:\n"
+            "- Write 'Q: [question text]'\n"
+            "- Then write 4 options like '- Option text'\n"
+            "- After the options, write 'Correct Answer: [number from 1 to 4]'\n"
+            "Example:\n"
+            "Q: What is the capital of France?\n"
+            "- Berlin\n"
+            "- Madrid\n"
+            "- Paris\n"
+            "- Rome\n"
+            "Correct Answer: 3"
         )
 
-        # Call AI for questions
-        try:
-            prompt = f"Generate 3 QCM-style questions with 4 answers each for the topic: {module.name}. Indicate the correct answer index (0-based)."
-            ai_response = self.query_ai(prompt)
-            question_blocks = ai_response.strip().split("\n\n")
+        ai_response = self.ask_openrouter(prompt)
 
-            for block in question_blocks:
-                lines = block.strip().split("\n")
-                question_text = lines[0]
-                answers = lines[1:5]
-                correct_index = int(lines[5].split(":")[-1].strip())
+        quiz = Quiz.objects.create(
+            title=f"Quiz for {module.name}",
+            description=f"Auto-generated quiz covering {chapter_names} (Difficulty {difficulty})",
+            duration=45,
+            module=module,
+            type=quiz_type,
+            created_by=user,
+            creation_mode='ai'
+        )
 
-                q = Question.objects.create(quiz=quiz, texte=question_text, type="qcm")
-                for idx, text in enumerate(answers):
-                    Answer.objects.create(
-                        question=q,
-                        texte=text,
-                        is_correct=(idx == correct_index)
-                    )
-
-        except Exception as e:
-            Question.objects.create(quiz=quiz, texte=f"⚠️ Failed to generate with AI: {str(e)}", type="text")
-
+        self.parse_questions(ai_response, quiz, quiz_type)
         serializer.save(user=user, quiz=quiz)
 
-    def query_ai(self, prompt):
+    def ask_openrouter(self, message):
         headers = {
             "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
-        data = {
+        payload = {
             "model": OPENROUTER_MODEL,
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.7
+            "messages": [
+                {"role": "system", "content": "You are an AI expert specialized in generating clean educational quizzes."},
+                {"role": "user", "content": message},
+            ],
         }
-        response = requests.post(OPENROUTER_API_URL, json=data, headers=headers)
-        response.raise_for_status()
-        return response.json()['choices'][0]['message']['content']
+        try:
+            response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=30)
+            response.raise_for_status()
+            return response.json()['choices'][0]['message']['content'].strip()
+        except requests.exceptions.RequestException as e:
+            print(f"[OpenRouter Quiz Error] {e}")
+            return "Error generating quiz."
+
+    def parse_questions(self, raw_text, quiz, quiz_type):
+        lines = raw_text.strip().split("\n")
+        current_question = None
+        options = []
+        correct_index = None
+
+        for line in lines:
+            line = line.strip()
+            if line.lower().startswith("q"):
+                if current_question and options:
+                    self.create_question_and_answers(quiz, current_question, options, correct_index)
+                current_question = line.split(":", 1)[-1].strip()
+                options = []
+                correct_index = None
+            elif line.startswith("-"):
+                options.append(line[1:].strip())
+            elif "correct answer" in line.lower():
+                try:
+                    correct_index = int(line.strip().split(":")[-1].strip()) - 1
+                except Exception as e:
+                    print(f"Parsing correct answer failed: {e}")
+                    correct_index = None
+
+        # Save the last question
+        if current_question and options:
+            self.create_question_and_answers(quiz, current_question, options, correct_index)
+
+    def create_question_and_answers(self, quiz, question_text, answers_list, correct_index):
+        question = Question.objects.create(
+            quiz=quiz,
+            text=question_text
+        )
+        for idx, answer_text in enumerate(answers_list):
+            Answer.objects.create(
+                question=question,
+                text=answer_text,
+                is_correct=(idx == correct_index)
+            )
 
 
-# 🎯 Program recommendations (kept simple)
+# 🎯 Program Recommendation API
 class ProgramRecommendationListCreateView(generics.ListCreateAPIView):
     queryset = ProgramRecommendation.objects.all()
     serializer_class = ProgramRecommendationSerializer
@@ -130,15 +192,14 @@ class ProgramRecommendationListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         user = self.request.user
-        all_modules = list(Module.objects.all())
-        random.shuffle(all_modules)
-
-        recommended = all_modules[:3]
+        modules = list(Module.objects.all())
+        random.shuffle(modules)
+        recommended = modules[:3]
         program = serializer.save(user=user)
         program.recommended_modules.set(recommended)
 
 
-# 📊 Performance tracking
+# 📊 Performance Tracking API
 class PerformanceTrackingListCreateView(generics.ListCreateAPIView):
     queryset = PerformanceTracking.objects.all()
     serializer_class = PerformanceTrackingSerializer
