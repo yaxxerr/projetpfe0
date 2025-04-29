@@ -15,33 +15,34 @@ from .serializers import (
     ChatbotMessageSerializer,
     GeneratedQuizSerializer,
     ProgramRecommendationSerializer,
-    PerformanceTrackingSerializer
+    PerformanceTrackingSerializer,
+    StudyProgramRequestSerializer
 )
 from quizzes.models import Quiz, Question, Answer
 from courses.models import Module, Chapter
 
-# Configuration OpenRouter
+# OpenRouter config
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "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")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_MODEL = "meta-llama/llama-4-maverick:free"
 
-# --- Endpoints de Debug ---
+# --- Basic debug endpoints ---
 def index(request):
     return HttpResponse("Bienvenue aux Endpoints IA 🎯")
 
 def chatbot_messages_view(request):
-    return HttpResponse("Endpoint Chatbot 🔥")
+    return HttpResponse("Chatbot Messages Endpoint 🔥")
 
 def generated_quizzes_view(request):
-    return HttpResponse("Endpoint Quiz Générés 🧠")
+    return HttpResponse("Generated Quizzes Endpoint 🧠")
 
 def program_recommendations_view(request):
-    return HttpResponse("Endpoint Recommandations de Programmes 📚")
+    return HttpResponse("Program Recommendations Endpoint 📚")
 
 def performance_tracking_view(request):
-    return HttpResponse("Endpoint Suivi de Performance 📈")
+    return HttpResponse("Performance Tracking Endpoint 📈")
 
-# 💬 Chatbot IA (Assistant)
+# 💬 Chatbot
 class ChatbotMessageListCreateView(generics.ListCreateAPIView):
     queryset = ChatbotMessage.objects.all()
     serializer_class = ChatbotMessageSerializer
@@ -49,7 +50,7 @@ class ChatbotMessageListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         user_message = serializer.validated_data['user_message']
-        bot_response = self.ask_openrouter(f"Réponds clairement et simplement en français : {user_message}")
+        bot_response = self.ask_openrouter(f"Réponds clairement en français : {user_message}")
         serializer.save(user=self.request.user, bot_response=bot_response)
 
     def ask_openrouter(self, message):
@@ -60,7 +61,7 @@ class ChatbotMessageListCreateView(generics.ListCreateAPIView):
         payload = {
             "model": OPENROUTER_MODEL,
             "messages": [
-                {"role": "system", "content": "Tu es un assistant éducatif intelligent qui répond toujours en français."},
+                {"role": "system", "content": "Tu es un assistant éducatif qui parle en français."},
                 {"role": "user", "content": message},
             ],
         }
@@ -72,7 +73,7 @@ class ChatbotMessageListCreateView(generics.ListCreateAPIView):
             print(f"[Erreur OpenRouter Chatbot] {e}")
             return "Erreur de communication avec l'IA."
 
-# 🧠 Générateur de Quiz IA
+# 🧠 Quiz Generator
 class GeneratedQuizListCreateView(generics.ListCreateAPIView):
     queryset = GeneratedQuiz.objects.all()
     serializer_class = GeneratedQuizSerializer
@@ -86,37 +87,28 @@ class GeneratedQuizListCreateView(generics.ListCreateAPIView):
         difficulty = validated_data['difficulty']
         quiz_type = validated_data['quiz_type']
 
-        if not module or not chapters:
-            raise ValueError("Le module et les chapitres sont obligatoires.")
-
         chapter_names = ", ".join([chapter.name for chapter in chapters])
 
         prompt = (
-            f"Génère un quiz de 15 questions de type {quiz_type.upper()} pour le module '{module.name}', "
-            f"couvrant les chapitres suivants : {chapter_names}. "
-            f"Niveau de difficulté : {difficulty}/5.\n"
-            "**Format strict :**\n"
-            "Q: [texte de la question]\n"
+            f"Génère un quiz de 15 questions de type {quiz_type.upper()} sur le module '{module.name}', "
+            f"couvrant les chapitres : {chapter_names}. Difficulté : {difficulty}/5.\n"
+            "Format strict :\n"
+            "Q: [question]\n"
             "- Option 1\n"
             "- Option 2\n"
             "- Option 3\n"
             "- Option 4\n"
-            "Réponse correcte : [numéro de l'option correcte entre 1 et 4]\n\n"
-            "**Règles importantes :**\n"
-            "- Commence chaque question par 'Q:'\n"
-            "- Chaque option commence par '-'\n"
-            "- Utilise 'Réponse correcte : [numéro]' pour donner la réponse correcte\n"
-            "- Aucune numérotation ou lettre dans les options, juste '-'"
+            "Réponse correcte : [1-4]"
         )
 
         ai_response = self.ask_openrouter(prompt)
-        print("=== RÉPONSE BRUTE IA ===")
+        print("=== RÉPONSE QUIZ IA ===")
         print(ai_response)
-        print("========================")
+        print("=======================")
 
         quiz = Quiz.objects.create(
             title=f"Quiz pour {module.name}",
-            description=f"Quiz généré couvrant {chapter_names} (Difficulté {difficulty})",
+            description=f"Auto-généré pour {chapter_names} (Difficulté {difficulty})",
             duration=45,
             module=module,
             type=quiz_type,
@@ -135,7 +127,7 @@ class GeneratedQuizListCreateView(generics.ListCreateAPIView):
         payload = {
             "model": OPENROUTER_MODEL,
             "messages": [
-                {"role": "system", "content": "Tu es spécialisé dans la création de quiz éducatifs en français."},
+                {"role": "system", "content": "Tu es un expert pour créer des quiz éducatifs en français."},
                 {"role": "user", "content": message},
             ],
         }
@@ -171,7 +163,7 @@ class GeneratedQuizListCreateView(generics.ListCreateAPIView):
                 if question_text and options:
                     self.create_question_and_answers(quiz, question_text, options, correct_index)
             except Exception as e:
-                print(f"[Erreur Parse] {e}\nBLOCK:\n{block}")
+                print(f"[Erreur Parse Quiz] {e}\nBLOCK:\n{block}")
 
     def create_question_and_answers(self, quiz, question_text, answers_list, correct_index):
         question = Question.objects.create(
@@ -185,21 +177,66 @@ class GeneratedQuizListCreateView(generics.ListCreateAPIView):
                 is_correct=(idx == correct_index)
             )
 
-# 📚 Recommandations de Programmes
-class ProgramRecommendationListCreateView(generics.ListCreateAPIView):
-    queryset = ProgramRecommendation.objects.all()
-    serializer_class = ProgramRecommendationSerializer
+# 📚 Program Recommandation (Générateur IA Personnalisé)
+class ProgramRecommendationListCreateView(generics.CreateAPIView):
+    serializer_class = StudyProgramRequestSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def perform_create(self, serializer):
-        user = self.request.user
-        modules = list(Module.objects.all())
-        random.shuffle(modules)
-        recommended = modules[:3]
-        program = serializer.save(user=user)
-        program.recommended_modules.set(recommended)
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        study_hours_per_day = request.data.get("study_hours_per_day")
+        days_until_exam = request.data.get("days_until_exam")
+        preferred_study_time = request.data.get("preferred_study_time")
+        goals = request.data.get("goals")
 
-# 📈 Suivi de Performance
+        if not study_hours_per_day or not days_until_exam or not preferred_study_time or not goals:
+            return HttpResponse("Tous les champs sont requis.", status=400)
+
+        prompt = (
+            f"En tant qu'expert éducatif, génère un programme d'étude personnalisé en français pour un étudiant :\n"
+            f"- Temps d'étude par jour : {study_hours_per_day} heures\n"
+            f"- Nombre de jours jusqu'aux examens : {days_until_exam} jours\n"
+            f"- Préférence : {preferred_study_time}\n"
+            f"- Objectifs : {goals}\n\n"
+            "Le programme doit inclure :\n"
+            "- Les modules à étudier par jour\n"
+            "- Les chapitres spécifiques\n"
+            "- Des suggestions de quiz\n"
+            "- Conseils d'organisation\n"
+            "Présente-le proprement, clair et motivant !"
+        )
+
+        study_program_text = self.ask_openrouter(prompt)
+
+        # Save ProgramRecommendation
+        program = ProgramRecommendation.objects.create(
+            user=user,
+            recommendation_text=study_program_text
+        )
+
+        return HttpResponse(study_program_text, content_type="text/plain")
+
+    def ask_openrouter(self, prompt):
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": OPENROUTER_MODEL,
+            "messages": [
+                {"role": "system", "content": "Tu es un assistant spécialisé dans la planification éducative personnalisée."},
+                {"role": "user", "content": prompt},
+            ],
+        }
+        try:
+            response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=60)
+            response.raise_for_status()
+            return response.json()['choices'][0]['message']['content'].strip()
+        except requests.exceptions.RequestException as e:
+            print(f"[Erreur OpenRouter Programme] {e}")
+            return "Erreur lors de la création du programme."
+
+# 📈 Performance Tracking
 class PerformanceTrackingListCreateView(generics.ListCreateAPIView):
     queryset = PerformanceTracking.objects.all()
     serializer_class = PerformanceTrackingSerializer

@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Quiz
 from .serializers import QuizSerializer
 
+
 class QuizViewSet(viewsets.ModelViewSet):
     queryset = Quiz.objects.all()
     serializer_class = QuizSerializer
@@ -44,8 +45,8 @@ class QuizSubmissionCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
-        # Automatically assign the authenticated user as the student
-        serializer.save(student=self.request.user)
+        submission = serializer.save()
+        submission.calculate_score()
 
 # ✅ GET: List all quiz submissions
 class QuizSubmissionListView(generics.ListAPIView):

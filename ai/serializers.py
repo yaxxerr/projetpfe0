@@ -41,16 +41,29 @@ class ChatbotMessageSerializer(serializers.ModelSerializer):
 
 
 
-class ProgramRecommendationSerializer(serializers.ModelSerializer):
-    recommended_modules = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Module.objects.all()
+class StudyProgramRequestSerializer(serializers.Serializer):
+    study_hours_per_day = serializers.IntegerField(
+        min_value=1, max_value=24,
+        help_text="Nombre d'heures d'étude par jour"
+    )
+    days_until_exam = serializers.IntegerField(
+        min_value=1,
+        help_text="Nombre de jours restants avant les examens"
+    )
+    preferred_study_time = serializers.ChoiceField(
+        choices=[('morning', 'Matin'), ('afternoon', 'Après-midi'), ('evening', 'Soir')],
+        help_text="Moment préféré pour étudier"
+    )
+    goals = serializers.CharField(
+        max_length=500,
+        help_text="Objectifs de l'étudiant (ex: passer l'examen, être dans le top 10%)"
     )
 
+class ProgramRecommendationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProgramRecommendation
-        fields = '__all__'
-
-
+        fields = ['id', 'user', 'recommendation_text', 'created_at']
+        read_only_fields = ['id', 'user', 'recommendation_text', 'created_at']
 class PerformanceTrackingSerializer(serializers.ModelSerializer):
     strong_modules = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Module.objects.all()

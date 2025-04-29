@@ -26,19 +26,11 @@ class QuizSerializer(serializers.ModelSerializer):
 
 class QuizSubmissionSerializer(serializers.ModelSerializer):
     selected_answers = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Answer.objects.all()
+        queryset=Answer.objects.all(),
+        many=True
     )
-    student = serializers.StringRelatedField(read_only=True)
-    quiz = serializers.StringRelatedField(read_only=True)
 
     class Meta:
         model = QuizSubmission
         fields = ['id', 'quiz', 'student', 'selected_answers', 'submitted_at', 'score']
-        read_only_fields = ['score', 'submitted_at']
-
-    def create(self, validated_data):
-        answers = validated_data.pop('selected_answers')
-        submission = QuizSubmission.objects.create(**validated_data)
-        submission.selected_answers.set(answers)
-        submission.calculate_score()
-        return submission
+        read_only_fields = ['id', 'submitted_at', 'score']
