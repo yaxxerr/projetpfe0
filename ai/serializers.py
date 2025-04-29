@@ -24,6 +24,15 @@ class GeneratedQuizSerializer(serializers.ModelSerializer):
         model = GeneratedQuiz
         fields = ['id', 'user', 'quiz', 'module', 'chapters', 'difficulty', 'quiz_type']
         read_only_fields = ['id', 'user', 'quiz']
+
+    def create(self, validated_data):
+        # Remove extra fields before creating the model instance
+        validated_data.pop('module', None)
+        validated_data.pop('chapters', None)
+        validated_data.pop('difficulty', None)
+        validated_data.pop('quiz_type', None)
+
+        return super().create(validated_data)
 class ChatbotMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChatbotMessage
