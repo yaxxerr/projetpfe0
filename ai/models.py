@@ -45,9 +45,18 @@ class GeneratedQuiz(models.Model):
             )
 
 
+from django.db import models
+from users.models import User
+from courses.models import Module, Chapter
+from notifications.models import Notification
+
 class ProgramRecommendation(models.Model):
     user = models.ForeignKey(User, related_name='program_recommendations', on_delete=models.CASCADE)
-    recommended_modules = models.ManyToManyField(Module)
+    recommendation_text = models.TextField(blank=True)
+    recommended_modules = models.ManyToManyField(Module, blank=True)
+    recommended_chapters = models.ManyToManyField(Chapter, blank=True)
+    goals_per_day = models.JSONField(default=list, blank=True)  # 🧠 JSON List like [{'day': 1, 'goal': 'Study chapter 1'}, ...]
+    completion_percentage = models.FloatField(default=0.0)  # 📈 % of completion
     recommended_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -64,12 +73,13 @@ class ProgramRecommendation(models.Model):
                 message=f"📘 A new AI-powered study program has been created for you. Focus on: {modules}."
             )
 
-            first = self.recommended_modules.first()
-            if first:
+            first_module = self.recommended_modules.first()
+            if first_module:
                 Notification.objects.create(
                     recipient=self.user,
-                    message=f"👉 Start with module: {first.name}"
+                    message=f"👉 Start with module: {first_module.name}"
                 )
+
 
 
 class PerformanceTracking(models.Model):
