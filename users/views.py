@@ -207,24 +207,33 @@ class MyFollowersView(APIView):
 
 class MyFollowingsView(generics.ListAPIView):
     serializer_class = FollowingSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         return Follow.objects.filter(student=self.request.user)
 
 class UnfollowProfessorView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated]
 
-    def delete(self, request, professor_username):
+    def post(self, request):
+        student = request.user
+        professor_username = request.data.get("professor_username")
+
+        if not professor_username:
+            return Response({"detail": "Professor username is required."}, status=400)
+
         try:
             professor = User.objects.get(username=professor_username, user_type='professor')
-            follow = Follow.objects.get(student=request.user, professor=professor)
-            follow.delete()
-            return Response({"message": f"You unfollowed {professor.username}"})
-        except Follow.DoesNotExist:
-            return Response({"error": "You are not following this professor."}, status=400)
         except User.DoesNotExist:
-            return Response({"error": "Professor not found."}, status=404)
+            return Response({"detail": "Professor not found."}, status=404)
+
+        try:
+            follow = Follow.objects.get(student=student, professor=professor)
+            follow.delete()
+            return Response({"detail": f"Unfollowed {professor.username} successfully."})
+        except Follow.DoesNotExist:
+            return Response({"detail": "You are not following this professor."}, status=400)
+
 
 
 # /modules/<id>/

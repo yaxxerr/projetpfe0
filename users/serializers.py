@@ -67,11 +67,12 @@ from .models import Follow
 
 class FollowSerializer(serializers.ModelSerializer):
     professor_username = serializers.CharField(write_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = Follow
-        fields = ['id', 'student', 'professor', 'professor_username']
-        read_only_fields = ['student', 'professor']  # professor set manually
+        fields = ['id', 'student', 'professor', 'professor_username', 'created_at']
+        read_only_fields = ['student', 'professor','created_at']  # professor set manually
 
     def create(self, validated_data):
         request = self.context['request']

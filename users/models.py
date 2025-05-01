@@ -175,7 +175,7 @@ class Student(User):
 class Follow(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='following')
     professor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='followers')
-    followed_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = ('student', 'professor')

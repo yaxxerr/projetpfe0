@@ -42,7 +42,7 @@ urlpatterns = [
     path('follow/', FollowProfessorView.as_view(), name='follow-professor'),
     path('my-followers/', MyFollowersView.as_view(), name='my-followers'),
     path('my-followings/', MyFollowingsView.as_view(), name='my-followings'),
-    path('unfollow/<str:professor_username>/', UnfollowProfessorView.as_view(), name='unfollow-professor'),
+    path('unfollow/', UnfollowProfessorView.as_view(), name='unfollow-professor'),
     path('modules/<int:pk>/', ModuleDetailView.as_view(), name='module-detail'),
    
 ]
