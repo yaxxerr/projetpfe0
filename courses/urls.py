@@ -1,12 +1,10 @@
 from django.urls import path
 from . import views
-<<<<<<< Updated upstream
 from .views import SpecialityListCreateView, LevelListCreateView, ModuleListCreateView, ChapterListCreateView, ModuleSearchView, ChapterSearchView, ResourceSearchView
 from django.urls import path
 from .views import ResourceListCreateView,MyResourcesView,ResourceDeleteView,ResourceUpdateView, AccessRequestListCreateView,ResourceSearchFlexibleView
 from .views import ModuleDetailView
 
-=======
 from .views import (
     SpecialityListCreateView,
     LevelListCreateView,
@@ -24,7 +22,6 @@ from .views import (
     RequestResourceAccessView,
     HandleAccessRequestView,
 )
->>>>>>> Stashed changes
 
 urlpatterns = [
     path('', views.index, name='courses-home'),
@@ -35,15 +32,12 @@ urlpatterns = [
     path('chapters/', ChapterListCreateView.as_view(), name='chapter-list-create'),
     path('resources/', ResourceListCreateView.as_view(), name='resource-list-create'),
     path('resources/access-requests/', AccessRequestListCreateView.as_view(), name='access-request-list-create'),
-<<<<<<< Updated upstream
     path('resources/search/', ResourceSearchFlexibleView.as_view(), name='flexible-resource-search'),
     path('resources/my/', MyResourcesView.as_view(), name='my-resources'),
     path('resources/<int:pk>/edit/', ResourceUpdateView.as_view(), name='edit-resource'),
     path('resources/<int:pk>/delete/', ResourceDeleteView.as_view(), name='delete-resource'),
-=======
 
     # 🔍 Search endpoints
->>>>>>> Stashed changes
     path('search/modules/', ModuleSearchView.as_view(), name='search-modules'),
     path('search/chapters/', ChapterSearchView.as_view(), name='search-chapters'),
     path('search/resources/', ResourceSearchView.as_view(), name='search-resources'),
