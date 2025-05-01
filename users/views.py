@@ -8,6 +8,7 @@ from .serializers import (
     UserSerializer,
     RegisterSerializer,
     UserUpdateSerializer,
+    FollowingSerializer
 )
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
@@ -190,7 +191,40 @@ class FollowProfessorView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        serializer.save(student=self.request.user)
+        serializer.save()
+
+
+class MyFollowersView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.is_professor():
+            return Response({"detail": "Not allowed."}, status=403)
+
+        followers = request.user.followers.select_related('student')
+        data = [{"id": f.student.id, "username": f.student.username} for f in followers]
+        return Response(data)
+
+class MyFollowingsView(generics.ListAPIView):
+    serializer_class = FollowingSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Follow.objects.filter(student=self.request.user)
+
+class UnfollowProfessorView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, professor_username):
+        try:
+            professor = User.objects.get(username=professor_username, user_type='professor')
+            follow = Follow.objects.get(student=request.user, professor=professor)
+            follow.delete()
+            return Response({"message": f"You unfollowed {professor.username}"})
+        except Follow.DoesNotExist:
+            return Response({"error": "You are not following this professor."}, status=400)
+        except User.DoesNotExist:
+            return Response({"error": "Professor not found."}, status=404)
 
 
 # /modules/<id>/
@@ -204,3 +238,5 @@ class UpdateMyProfileView(generics.UpdateAPIView):
 
     def get_object(self):
         return self.request.user  # ✅ Très important !
+
+

@@ -16,6 +16,9 @@ from .views import (
     MyModulesView,
     UpdateMyProfileView,
     ModuleDetailView,
+    MyFollowersView,
+    MyFollowingsView,
+    UnfollowProfessorView
 )
 
 urlpatterns = [
@@ -37,5 +40,9 @@ urlpatterns = [
     path('my-modules/', MyModulesView.as_view(), name='users-modules'),
     path('assign-my-modules/', AssignModulesView.as_view(), name='assign-my-modules'),
     path('follow/', FollowProfessorView.as_view(), name='follow-professor'),
+    path('my-followers/', MyFollowersView.as_view(), name='my-followers'),
+    path('my-followings/', MyFollowingsView.as_view(), name='my-followings'),
+    path('unfollow/<str:professor_username>/', UnfollowProfessorView.as_view(), name='unfollow-professor'),
     path('modules/<int:pk>/', ModuleDetailView.as_view(), name='module-detail'),
+   
 ]

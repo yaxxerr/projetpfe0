@@ -8,7 +8,7 @@ from .serializers import SpecialitySerializer, LevelSerializer,ResourceSerialize
 from rest_framework import generics, permissions
 from .models import Resource, AccessRequest
 from .serializers import ResourceSerializer, AccessRequestSerializer
-from rest_framework.generics import ListCreateAPIView, RetrieveAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveAPIView, RetrieveUpdateAPIView, DestroyAPIView
 from rest_framework.generics import ListAPIView
 from django.contrib.auth import get_user_model
 from rest_framework.views import APIView
@@ -77,6 +77,11 @@ class ResourceListCreateView(generics.ListCreateAPIView):
     queryset = Resource.objects.all()
     serializer_class = ResourceSerializer
     permission_classes = [IsAuthenticated]
+    def perform_create(self, serializer):
+        user = self.request.user
+        if not user.is_professor():
+            raise PermissionDenied("Only professors can create resources.")
+        serializer.save(owner=user)
 
 class AccessRequestListCreateView(generics.ListCreateAPIView):
     queryset = AccessRequest.objects.all()
@@ -107,3 +112,30 @@ class ResourceSearchView(generics.ListAPIView):
     serializer_class = ResourceSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'resource_type', 'chapter__name']
+
+class MyResourcesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.is_professor():
+            return Response({"detail": "Not allowed."}, status=403)
+
+        resources = Resource.objects.filter(owner=request.user)
+        serializer = ResourceSerializer(resources, many=True)
+        return Response(serializer.data)
+
+class ResourceUpdateView(RetrieveUpdateAPIView):
+    queryset = Resource.objects.all()
+    serializer_class = ResourceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return self.queryset.filter(owner=self.request.user)
+
+
+class ResourceDeleteView(DestroyAPIView):
+    queryset = Resource.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return self.queryset.filter(owner=self.request.user)

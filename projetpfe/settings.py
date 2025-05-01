@@ -2,6 +2,7 @@
 import dj_database_url
 from pathlib import Path
 import os
+from datetime import timedelta
 
 # settings.py
 OPENROUTER_API_KEY = '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'
@@ -132,6 +133,14 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',  # Enables login through UI
         'rest_framework_simplejwt.authentication.JWTAuthentication',  # For token use
     )
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=24),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),  # optional
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
 CORS_ALLOW_ALL_ORIGINS = True

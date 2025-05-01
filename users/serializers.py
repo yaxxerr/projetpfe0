@@ -66,9 +66,32 @@ from rest_framework import serializers
 from .models import Follow
 
 class FollowSerializer(serializers.ModelSerializer):
+    professor_username = serializers.CharField(write_only=True)
+
     class Meta:
         model = Follow
-        fields = ['id', 'student', 'professor', 'followed_at']
+        fields = ['id', 'student', 'professor', 'professor_username']
+        read_only_fields = ['student', 'professor']  # professor set manually
+
+    def create(self, validated_data):
+        request = self.context['request']
+        student = request.user
+        username = validated_data.pop('professor_username')
+
+        try:
+            professor = User.objects.get(username=username, user_type='professor')
+        except User.DoesNotExist:
+            raise serializers.ValidationError("❌ Professor with this username not found.")
+
+        follow = Follow.objects.create(student=student, professor=professor)
+        return follow
+
+class FollowingSerializer(serializers.ModelSerializer):
+    professor_username = serializers.CharField(source='professor.username', read_only=True)
+
+    class Meta:
+        model = Follow
+        fields = ['id', 'professor_username', 'created_at']
 
 
 
