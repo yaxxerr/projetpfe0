@@ -16,24 +16,27 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import generics, permissions, status
 from rest_framework.decorators import api_view
 from rest_framework.views import APIView
+from courses.models import AccessRequest
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from courses.models import Module
-from courses.serializers import ModuleSerializer
+from courses.serializers import ModuleSerializer, ResourceSerializer
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from courses.models import Module, Chapter, Resource
 from courses.serializers import ModuleSerializer
 
+
 class MyModulesView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         user = request.user
+        filter_type = request.query_params.get("filter")  # 'all', 'default', 'private'
         modules = user.modules.prefetch_related('chapters__resources').all()
 
         data = []
@@ -48,41 +51,28 @@ class MyModulesView(APIView):
 
             for chapter in module.chapters.all():
                 all_resources = chapter.resources.all()
-                default_resources = all_resources.filter(owner__is_superuser=True)
-                private_resources = all_resources.filter(access_type="private")
+
+                if filter_type == "default":
+                    resources = all_resources.filter(owner__is_superuser=True)
+
+                elif filter_type == "private":
+                    approved_ids = AccessRequest.objects.filter(
+                        requester=user,
+                        approved=True
+                    ).values_list("resource_id", flat=True)
+
+                    resources = all_resources.filter(
+                        access_type="private",
+                        id__in=approved_ids
+                    )
+
+                else:  # default to "all"
+                    resources = all_resources
 
                 chapter_data = {
                     "id": chapter.id,
                     "name": chapter.name,
-                    "resources": {
-                        "all": [
-                            {
-                                "id": r.id,
-                                "name": r.name,
-                                "resource_type": r.resource_type,
-                                "access_type": r.access_type,
-                                "link": r.link,
-                            } for r in all_resources
-                        ],
-                        "default": [
-                            {
-                                "id": r.id,
-                                "name": r.name,
-                                "resource_type": r.resource_type,
-                                "access_type": r.access_type,
-                                "link": r.link,
-                            } for r in default_resources
-                        ],
-                        "private": [
-                            {
-                                "id": r.id,
-                                "name": r.name,
-                                "resource_type": r.resource_type,
-                                "access_type": r.access_type,
-                                "link": r.link,
-                            } for r in private_resources
-                        ]
-                    }
+                    "resources": ResourceSerializer(resources, many=True, context={"request": request}).data
                 }
 
                 module_data["chapters"].append(chapter_data)
@@ -90,8 +80,7 @@ class MyModulesView(APIView):
             data.append(module_data)
 
         return Response(data)
-
-
+        
 # ✅ REGISTER (version de ton ami)
 class RegisterView(APIView):
     def post(self, request):

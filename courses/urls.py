@@ -46,5 +46,7 @@ urlpatterns = [
     path('resources/my/', MyModuleResourcesView.as_view(), name='my-module-resources'),
     path('resources/add/<int:resource_id>/', AddPublicResourceView.as_view(), name='add-public-resource'),
     path('resources/request/<int:resource_id>/', RequestResourceAccessView.as_view(), name='request-resource-access'),
+    path('resources/access-requests/received/', views.ReceivedAccessRequestsView.as_view(), name='received-access-requests'),
+    path('resources/access-requests/sent/', views.SentAccessRequestsView.as_view(), name='sent-access-requests'),
     path('resources/handle-request/<int:request_id>/', HandleAccessRequestView.as_view(), name='handle-access-request'),
 ]

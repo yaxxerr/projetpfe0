@@ -13,25 +13,26 @@ User = get_user_model()
 
 # 🧠 Resource Serializer with extra info
 class ResourceSerializer(serializers.ModelSerializer):
-    chapter_name = serializers.CharField(source='chapter.name', read_only=True)
-    module_name = serializers.CharField(source='chapter.module.name', read_only=True)
-    owner_username = serializers.CharField(source='owner.username', read_only=True)
+    link = serializers.SerializerMethodField()
 
     class Meta:
         model = Resource
-        fields = [
-            'id',
-            'name',
-            'resource_type',
-            'access_type',
-            'link',
-            'chapter',
-            'chapter_name',
-            'module_name',
-            'owner',
-            'owner_username',
-            'created_at'
-        ]
+        fields = ['id', 'name', 'resource_type', 'access_type', 'owner', 'link']
+
+    def get_link(self, obj):
+        user = self.context['request'].user
+
+        if obj.access_type == 'public':
+            return obj.link
+
+        if obj.owner == user:
+            return obj.link
+
+        if AccessRequest.objects.filter(resource=obj, requester=user, approved=True).exists():
+            return obj.link
+
+        return None  # or "🔒 Locked"
+
 
 # 🔍 For student search bar etc
 class UserSearchSerializer(serializers.ModelSerializer):

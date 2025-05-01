@@ -118,16 +118,16 @@ class MyResourcesView(APIView):
             return Response({"detail": "Not allowed."}, status=403)
 
         resources = Resource.objects.filter(owner=request.user)
-        serializer = ResourceSerializer(resources, many=True)
+        serializer = ResourceSerializer(queryset, many=True, context={"request": request})
         return Response(serializer.data)
 
-class ResourceUpdateView(RetrieveUpdateAPIView):
-    queryset = Resource.objects.all()
-    serializer_class = ResourceSerializer
+class ResourceUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        return self.queryset.filter(owner=self.request.user)
+    def get(self, request):
+        queryset = Resource.objects.filter(owner=request.user)  # ✅ access request properly
+        serializer = ResourceSerializer(queryset, many=True, context={"request": request})
+        return Response(serializer.data)
 
 
 class ResourceDeleteView(DestroyAPIView):
@@ -136,6 +136,9 @@ class ResourceDeleteView(DestroyAPIView):
 
     def get_queryset(self):
         return self.queryset.filter(owner=self.request.user)
+        def get_serializer_context(self):
+             return {"request": self.request}
+
 # 🔍 Flexible resource search
 class ResourceSearchFlexibleView(APIView):
     permission_classes = [IsAuthenticated]
@@ -160,7 +163,7 @@ class ResourceSearchFlexibleView(APIView):
         else:
             return Response({"error": "Provide either 'chapter' or 'module' as a filter."}, status=400)
 
-        serializer = ResourceSerializer(resources, many=True)
+        serializer = ResourceSerializer(queryset, many=True, context={"request": request})
         return Response(serializer.data)
 
 # ✅ ✅ ✅ ADDED FOR RESOURCE VISIBILITY CONTROL ✅ ✅ ✅
@@ -186,7 +189,7 @@ class MyModuleResourcesView(APIView):
         )
 
         resources = (public_resources | added | approved_private).distinct()
-        serializer = ResourceSerializer(resources, many=True)
+        serializer = ResourceSerializer(queryset, many=True, context={"request": request})
         return Response(serializer.data)
 
 class AddPublicResourceView(APIView):
@@ -229,22 +232,57 @@ class RequestResourceAccessView(APIView):
 class HandleAccessRequestView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, request_id):
+    def patch(self, request, request_id):
         try:
-            access = AccessRequest.objects.get(id=request_id)
-            if access.resource.owner != request.user:
-                return Response({"detail": "❌ You do not own this resource."}, status=403)
-
-            action = request.data.get("action")
-            if action == "approve":
-                access.approve()
-                access.requester.added_resources.add(access.resource)
-                return Response({"detail": "✅ Approved and added."})
-            elif action == "reject":
-                access.reject()
-                return Response({"detail": "❌ Request rejected."})
-            else:
-                return Response({"detail": "Invalid action."}, status=400)
-
+            access_request = AccessRequest.objects.get(id=request_id)
         except AccessRequest.DoesNotExist:
-            return Response({"detail": "❌ Access request not found."}, status=404)
+            return Response({"detail": "Not found"}, status=404)
+
+        if access_request.resource.owner != request.user:
+            return Response({"detail": "Not allowed"}, status=403)
+
+        approved = request.data.get("approved")
+        if approved is None:
+            return Response({"detail": "Missing 'approved' field"}, status=400)
+
+        access_request.approved = approved
+        access_request.save()
+        return Response({"success": True, "approved": approved})
+
+class ReceivedAccessRequestsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.user_type != 'professor':
+            return Response({"detail": "Forbidden"}, status=403)
+
+        requests = AccessRequest.objects.filter(resource__owner=request.user)
+        data = [
+            {
+                "id": r.id,
+                "requester": r.requester.username,
+                "resource": r.resource.name,
+                "approved": r.approved,
+                "created_at": r.created_at
+            }
+            for r in requests
+        ]
+        return Response(data)
+
+
+class SentAccessRequestsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        requests = AccessRequest.objects.filter(requester=request.user)
+        data = [
+            {
+                "id": r.id,
+                "resource": r.resource.name,
+                "approved": r.approved,
+                "created_at": r.created_at
+            }
+            for r in requests
+        ]
+        return Response(data)
+
