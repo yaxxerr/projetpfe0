@@ -23,6 +23,69 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from courses.models import Module
 from courses.serializers import ModuleSerializer
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from courses.models import Module, Chapter, Resource
+from courses.serializers import ModuleSerializer
+
+class MyModulesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        # Get all modules assigned to this user
+        modules = user.modules.prefetch_related('chapters__resources').all()
+
+        # Filter each module’s chapters to include only those where:
+        # the chapter has at least one resource in user.added_resources
+        filtered_modules = []
+
+        for module in modules:
+            relevant_chapters = []
+            for chapter in module.chapters.all():
+                chapter_resources = chapter.resources.filter(id__in=user.added_resources.values_list('id', flat=True))
+                if chapter_resources.exists():
+                    chapter.filtered_resources = chapter_resources  # ✅ attach manually
+                    relevant_chapters.append(chapter)
+
+            if relevant_chapters:
+                module.filtered_chapters = relevant_chapters
+                filtered_modules.append(module)
+
+        # Now serialize using custom logic
+        data = []
+        for module in filtered_modules:
+            module_data = {
+                "id": module.id,
+                "name": module.name,
+                "description": module.description,
+                "chapters": []
+            }
+
+            for chapter in module.filtered_chapters:
+                chapter_data = {
+                    "id": chapter.id,
+                    "name": chapter.name,
+                    "resources": []
+                }
+
+                for res in chapter.filtered_resources:
+                    chapter_data["resources"].append({
+                        "id": res.id,
+                        "name": res.name,
+                        "resource_type": res.resource_type,
+                        "access_type": res.access_type,
+                        "link": res.link
+                    })
+
+                module_data["chapters"].append(chapter_data)
+
+            data.append(module_data)
+
+        return Response(data)
+
 
 
 # ✅ REGISTER (version de ton ami)
@@ -173,15 +236,6 @@ class UserSearchView(APIView):
         return Response(data)
 
 
-# /my-modules/
-class MyModulesView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        user = request.user
-        modules = user.modules.all()
-        serializer = ModuleSerializer(modules, many=True)
-        return Response(serializer.data)
 
 
 # /follow/

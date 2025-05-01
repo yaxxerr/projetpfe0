@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from courses.models import Speciality, Module, Chapter, Resource, Level
 from users.models import User
-from courses.serializers import SpecialitySerializer, LevelSerializer, ModuleSimpleSerializer, ChapterSimpleSerializer, ResourceSerializer
+from courses.serializers import SpecialitySerializer, LevelSerializer, ModuleSerializer, ChapterSerializer, ResourceSerializer
 from users.serializers import  UserBasicSerializer
 
 class CourseSearchView(APIView):

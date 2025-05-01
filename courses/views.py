@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from rest_framework import generics, filters
+<<<<<<< Updated upstream
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from .models import Speciality, Level, Module, Chapter
@@ -10,40 +11,33 @@ from .models import Resource, AccessRequest
 from .serializers import ResourceSerializer, AccessRequestSerializer
 from rest_framework.generics import ListCreateAPIView, RetrieveAPIView, RetrieveUpdateAPIView, DestroyAPIView
 from rest_framework.generics import ListAPIView
+=======
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from .models import Speciality, Level, Module, Chapter, Resource, AccessRequest
+from .serializers import (
+    SpecialitySerializer,
+    LevelSerializer,
+    ModuleSerializer,
+    ChapterSerializer,
+    ResourceSerializer,
+    AccessRequestSerializer,
+    UserSearchSerializer,
+    ModuleSerializer,
+    ChapterSerializer
+)
+from rest_framework.generics import ListCreateAPIView, RetrieveAPIView, ListAPIView
+>>>>>>> Stashed changes
 from django.contrib.auth import get_user_model
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
+from django.db.models import Q
 from users.serializers import UserBasicSerializer
 
-class ResourceSearchFlexibleView(APIView):
-    permission_classes = [IsAuthenticated]
+User = get_user_model()
 
-    def get(self, request):
-        chapter_name = request.query_params.get("chapter")
-        module_name = request.query_params.get("module")
-        resource_type = request.query_params.get("type")
-
-        if not resource_type:
-            return Response({"error": "Please provide 'type' as a query parameter."}, status=400)
-
-        if chapter_name:
-            chapters = Chapter.objects.filter(name__icontains=chapter_name)
-            resources = Resource.objects.filter(chapter__in=chapters, resource_type=resource_type)
-
-        elif module_name:
-            modules = Module.objects.filter(name__icontains=module_name)
-            chapters = Chapter.objects.filter(module__in=modules)
-            resources = Resource.objects.filter(chapter__in=chapters, resource_type=resource_type)
-
-        else:
-            return Response({"error": "Provide either 'chapter' or 'module' as a filter."}, status=400)
-
-        serializer = ResourceSerializer(resources, many=True)
-        return Response(serializer.data)
-
-
+# 🌐 Public test
 def index(request):
     return HttpResponse("Welcome to courses-endpoint")
 
@@ -88,12 +82,10 @@ class AccessRequestListCreateView(generics.ListCreateAPIView):
     serializer_class = AccessRequestSerializer
     permission_classes = [IsAuthenticated]
 
-User = get_user_model()
-
 # 🔍 Module Search View
 class ModuleSearchView(ListAPIView):
     queryset = Module.objects.all()
-    serializer_class = ModuleSimpleSerializer
+    serializer_class = ModuleSerializer
     permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_fields = ['speciality', 'level']
@@ -102,17 +94,18 @@ class ModuleSearchView(ListAPIView):
 # 🔍 Chapter Search View
 class ChapterSearchView(generics.ListAPIView):
     queryset = Chapter.objects.all()
-    serializer_class = ChapterSimpleSerializer
+    serializer_class = ChapterSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'module__name']
 
-# 🔍 Resource Search Vie
+# 🔍 Resource Search View
 class ResourceSearchView(generics.ListAPIView):
     queryset = Resource.objects.all()
     serializer_class = ResourceSerializer
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'resource_type', 'chapter__name']
 
+<<<<<<< Updated upstream
 class MyResourcesView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -139,3 +132,117 @@ class ResourceDeleteView(DestroyAPIView):
 
     def get_queryset(self):
         return self.queryset.filter(owner=self.request.user)
+=======
+# 🔍 Flexible resource search
+class ResourceSearchFlexibleView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        chapter_name = request.query_params.get("chapter")
+        module_name = request.query_params.get("module")
+        resource_type = request.query_params.get("type")
+
+        if not resource_type:
+            return Response({"error": "Please provide 'type' as a query parameter."}, status=400)
+
+        if chapter_name:
+            chapters = Chapter.objects.filter(name__icontains=chapter_name)
+            resources = Resource.objects.filter(chapter__in=chapters, resource_type=resource_type)
+
+        elif module_name:
+            modules = Module.objects.filter(name__icontains=module_name)
+            chapters = Chapter.objects.filter(module__in=modules)
+            resources = Resource.objects.filter(chapter__in=chapters, resource_type=resource_type)
+
+        else:
+            return Response({"error": "Provide either 'chapter' or 'module' as a filter."}, status=400)
+
+        serializer = ResourceSerializer(resources, many=True)
+        return Response(serializer.data)
+
+# ✅ ✅ ✅ ADDED FOR RESOURCE VISIBILITY CONTROL ✅ ✅ ✅
+
+class MyModuleResourcesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        chapters = Chapter.objects.filter(module__in=user.modules.all())
+        chapter_ids = chapters.values_list('id', flat=True)
+
+        public_resources = Resource.objects.filter(
+            chapter__in=chapter_ids,
+            access_type='public'
+        )
+
+        added = user.added_resources.all()
+
+        approved_private = Resource.objects.filter(
+            access_requests__requester=user,
+            access_requests__approved=True
+        )
+
+        resources = (public_resources | added | approved_private).distinct()
+        serializer = ResourceSerializer(resources, many=True)
+        return Response(serializer.data)
+
+class AddPublicResourceView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, resource_id):
+        user = request.user
+        try:
+            res = Resource.objects.get(id=resource_id, access_type='public')
+            if res in user.added_resources.all():
+                return Response({"detail": "Already added."}, status=400)
+            user.added_resources.add(res)
+            return Response({"detail": "✅ Resource added."})
+        except Resource.DoesNotExist:
+            return Response({"detail": "❌ Resource not found or not public."}, status=404)
+
+class RequestResourceAccessView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, resource_id):
+        user = request.user
+        try:
+            resource = Resource.objects.get(id=resource_id)
+            if resource.access_type != 'private':
+                return Response({"detail": "This resource is not private."}, status=400)
+
+            existing = AccessRequest.objects.filter(resource=resource, requester=user).first()
+            if existing:
+                return Response({"detail": "Request already sent."}, status=400)
+
+            AccessRequest.objects.create(
+                resource=resource,
+                requester=user,
+                message=request.data.get("message", "")
+            )
+            return Response({"detail": "✅ Access request sent."})
+        except Resource.DoesNotExist:
+            return Response({"detail": "❌ Resource not found."}, status=404)
+
+class HandleAccessRequestView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, request_id):
+        try:
+            access = AccessRequest.objects.get(id=request_id)
+            if access.resource.owner != request.user:
+                return Response({"detail": "❌ You do not own this resource."}, status=403)
+
+            action = request.data.get("action")
+            if action == "approve":
+                access.approve()
+                access.requester.added_resources.add(access.resource)
+                return Response({"detail": "✅ Approved and added."})
+            elif action == "reject":
+                access.reject()
+                return Response({"detail": "❌ Request rejected."})
+            else:
+                return Response({"detail": "Invalid action."}, status=400)
+
+        except AccessRequest.DoesNotExist:
+            return Response({"detail": "❌ Access request not found."}, status=404)
+>>>>>>> Stashed changes

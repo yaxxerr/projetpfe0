@@ -13,6 +13,7 @@ class User(AbstractUser):
     bio = models.TextField(blank=True)
     background = models.TextField(blank=True)
     modules = models.ManyToManyField('courses.Module', blank=True)
+    added_resources = models.ManyToManyField('courses.Resource', blank=True, related_name='added_by_users')  # ✅ NEW
     speciality = models.ForeignKey('courses.Speciality', on_delete=models.SET_NULL, null=True, blank=True)
     level = models.ForeignKey('courses.Level', on_delete=models.SET_NULL, null=True, blank=True)
 
@@ -56,7 +57,6 @@ class User(AbstractUser):
                     recipient=self,
                     message="⚠️ No modules found for your profile. Please contact the admin."
                 )
-
 
     def use_chatbot(self, message):
         from ai.models import ChatbotMessage
