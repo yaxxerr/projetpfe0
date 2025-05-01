@@ -22,11 +22,6 @@ from .views import (
     RequestResourceAccessView,
     HandleAccessRequestView,
 )
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
-
 urlpatterns = [
     path('', views.index, name='courses-home'),
     path('specialities/', SpecialityListCreateView.as_view(), name='speciality-endpoint'),

@@ -1,18 +1,17 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from rest_framework import generics, filters
-<<<<<<< Updated upstream
+
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from .models import Speciality, Level, Module, Chapter
 from .serializers import SpecialitySerializer, LevelSerializer,ResourceSerializer, ModuleSerializer, ChapterSerializer, UserSearchSerializer, ModuleSerializer, ChapterSerializer
-=======
 
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from .models import Speciality, Level, Module, Chapter
 from .serializers import SpecialitySerializer, LevelSerializer,ResourceSerializer, ModuleSerializer, ChapterSerializer, UserSearchSerializer
->>>>>>> Stashed changes
+
 from rest_framework import generics, permissions
 from .models import Resource, AccessRequest
 from .serializers import ResourceSerializer, AccessRequestSerializer
@@ -32,10 +31,6 @@ from .serializers import (
     ChapterSerializer
 )
 from rest_framework.generics import ListCreateAPIView, RetrieveAPIView, ListAPIView
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
 from django.contrib.auth import get_user_model
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -114,10 +109,7 @@ class ResourceSearchView(generics.ListAPIView):
     filter_backends = [filters.SearchFilter]
     search_fields = ['name', 'resource_type', 'chapter__name']
 
-<<<<<<< Updated upstream
-=======
 
->>>>>>> Stashed changes
 class MyResourcesView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -144,10 +136,6 @@ class ResourceDeleteView(DestroyAPIView):
 
     def get_queryset(self):
         return self.queryset.filter(owner=self.request.user)
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
 # 🔍 Flexible resource search
 class ResourceSearchFlexibleView(APIView):
     permission_classes = [IsAuthenticated]
@@ -260,7 +248,3 @@ class HandleAccessRequestView(APIView):
 
         except AccessRequest.DoesNotExist:
             return Response({"detail": "❌ Access request not found."}, status=404)
-<<<<<<< Updated upstream
-=======
-
->>>>>>> Stashed changes
