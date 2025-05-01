@@ -34,29 +34,11 @@ class MyModulesView(APIView):
 
     def get(self, request):
         user = request.user
-
-        # Get all modules assigned to this user
         modules = user.modules.prefetch_related('chapters__resources').all()
 
-        # Filter each module’s chapters to include only those where:
-        # the chapter has at least one resource in user.added_resources
-        filtered_modules = []
+        data = []
 
         for module in modules:
-            relevant_chapters = []
-            for chapter in module.chapters.all():
-                chapter_resources = chapter.resources.filter(id__in=user.added_resources.values_list('id', flat=True))
-                if chapter_resources.exists():
-                    chapter.filtered_resources = chapter_resources  # ✅ attach manually
-                    relevant_chapters.append(chapter)
-
-            if relevant_chapters:
-                module.filtered_chapters = relevant_chapters
-                filtered_modules.append(module)
-
-        # Now serialize using custom logic
-        data = []
-        for module in filtered_modules:
             module_data = {
                 "id": module.id,
                 "name": module.name,
@@ -64,28 +46,50 @@ class MyModulesView(APIView):
                 "chapters": []
             }
 
-            for chapter in module.filtered_chapters:
+            for chapter in module.chapters.all():
+                all_resources = chapter.resources.all()
+                default_resources = all_resources.filter(owner__is_superuser=True)
+                private_resources = all_resources.filter(access_type="private")
+
                 chapter_data = {
                     "id": chapter.id,
                     "name": chapter.name,
-                    "resources": []
+                    "resources": {
+                        "all": [
+                            {
+                                "id": r.id,
+                                "name": r.name,
+                                "resource_type": r.resource_type,
+                                "access_type": r.access_type,
+                                "link": r.link,
+                            } for r in all_resources
+                        ],
+                        "default": [
+                            {
+                                "id": r.id,
+                                "name": r.name,
+                                "resource_type": r.resource_type,
+                                "access_type": r.access_type,
+                                "link": r.link,
+                            } for r in default_resources
+                        ],
+                        "private": [
+                            {
+                                "id": r.id,
+                                "name": r.name,
+                                "resource_type": r.resource_type,
+                                "access_type": r.access_type,
+                                "link": r.link,
+                            } for r in private_resources
+                        ]
+                    }
                 }
-
-                for res in chapter.filtered_resources:
-                    chapter_data["resources"].append({
-                        "id": res.id,
-                        "name": res.name,
-                        "resource_type": res.resource_type,
-                        "access_type": res.access_type,
-                        "link": res.link
-                    })
 
                 module_data["chapters"].append(chapter_data)
 
             data.append(module_data)
 
         return Response(data)
-
 
 
 # ✅ REGISTER (version de ton ami)

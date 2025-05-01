@@ -68,11 +68,23 @@ class AccessRequestSerializer(serializers.ModelSerializer):
 
 # 🧩 Nested Chapter > Resources
 class ChapterSerializer(serializers.ModelSerializer):
-    resources = ResourceSerializer(many=True, read_only=True)
+    all_resources = serializers.SerializerMethodField()
+    default_resources = serializers.SerializerMethodField()
+    private_resources = serializers.SerializerMethodField()
 
     class Meta:
         model = Chapter
-        fields = ['id', 'name', 'module', 'resources']
+        fields = ['id', 'name', 'all_resources', 'default_resources', 'private_resources']
+
+    def get_all_resources(self, obj):
+        return ResourceSerializer(obj.resources.all(), many=True).data
+
+    def get_default_resources(self, obj):
+        return ResourceSerializer(obj.resources.filter(owner__is_superuser=True), many=True).data
+
+    def get_private_resources(self, obj):
+        return ResourceSerializer(obj.resources.filter(access_type='private'), many=True).data
+
 
 # 🧱 Nested Module > Chapters
 class ModuleSerializer(serializers.ModelSerializer):
