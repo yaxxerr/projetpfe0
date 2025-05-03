@@ -55,3 +55,10 @@ class AnnouncementView(APIView):
     type='announcement' 
 )
         return Response({"detail": "Announcement sent."})
+
+class MarkAllNotificationsReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+        return Response({"detail": "✅ All notifications marked as read."})
