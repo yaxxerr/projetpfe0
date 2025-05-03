@@ -80,17 +80,26 @@ class MyModulesView(APIView):
             data.append(module_data)
 
         return Response(data)
-        
+
 # ✅ REGISTER (version de ton ami)
-class RegisterView(APIView):
-    def post(self, request):
-        serializer = RegisterSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-            return Response({"message": "User registered successfully"}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class RegisterView(generics.CreateAPIView):
+    serializer_class = RegisterSerializer
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
 
+        # ✅ Automatically assign modules after user is created
+        user.assign_modules_to_student()
+
+        return Response({
+            "message": "✅ Inscription réussie",
+            "username": user.username,
+            "user_type": user.user_type
+        }, status=status.HTTP_201_CREATED)
+
+        
 # ✅ ASSIGN MODULES
 class AssignModulesView(GenericAPIView):
     permission_classes = [IsAuthenticated]
