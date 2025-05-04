@@ -74,10 +74,29 @@ class ChapterListCreateView(generics.ListCreateAPIView):
     def get_serializer_context(self):
         return {"request": self.request}
 
+from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated
+from django.core.exceptions import PermissionDenied
+from courses.models import Resource
+from courses.serializers import ResourceSerializer
+
 class ResourceListCreateView(generics.ListCreateAPIView):
     queryset = Resource.objects.all()
     serializer_class = ResourceSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = Resource.objects.all()
+        filter_type = self.request.GET.get('filter')
+
+        if filter_type == 'private':
+            queryset = queryset.filter(access_type='private')
+        elif filter_type == 'public':
+            queryset = queryset.filter(access_type='public')
+        elif filter_type == 'default':
+            queryset = queryset.filter(owner__is_superuser=True)
+
+        return queryset
 
     def get_serializer_context(self):
         return {"request": self.request}
@@ -87,6 +106,7 @@ class ResourceListCreateView(generics.ListCreateAPIView):
         if not user.is_professor():
             raise PermissionDenied("Only professors can create resources.")
         serializer.save(owner=user)
+
 
 class AccessRequestListCreateView(generics.ListCreateAPIView):
     queryset = AccessRequest.objects.all()
