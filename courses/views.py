@@ -11,7 +11,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from .models import Speciality, Level, Module, Chapter
 from .serializers import SpecialitySerializer, LevelSerializer,ResourceSerializer, ModuleSerializer, ChapterSerializer, UserSearchSerializer
-
+from django.core.exceptions import PermissionDenied
 from rest_framework import generics, permissions
 from .models import Resource, AccessRequest
 from .serializers import ResourceSerializer, AccessRequestSerializer
@@ -70,11 +70,18 @@ class ChapterListCreateView(generics.ListCreateAPIView):
     queryset = Chapter.objects.all()
     serializer_class = ChapterSerializer
     permission_classes = [IsAuthenticated]
+    
+    def get_serializer_context(self):
+        return {"request": self.request}
 
 class ResourceListCreateView(generics.ListCreateAPIView):
     queryset = Resource.objects.all()
     serializer_class = ResourceSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_serializer_context(self):
+        return {"request": self.request}
+
     def perform_create(self, serializer):
         user = self.request.user
         if not user.is_professor():

@@ -17,7 +17,14 @@ class ResourceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Resource
-        fields = ['id', 'name', 'resource_type', 'access_type', 'owner', 'link']
+        fields = ['id','chapter', 'name', 'resource_type', 'access_type', 'link']
+        read_only_fields = ['owner'] 
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            validated_data['owner'] = request.user  # 👈 assign the logged-in user
+        return super().create(validated_data)
 
     def get_link(self, obj):
         user = self.context['request'].user
@@ -75,16 +82,22 @@ class ChapterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Chapter
-        fields = ['id', 'name', 'all_resources', 'default_resources', 'private_resources']
+        fields = ['id', 'name', 'module' , 'all_resources', 'default_resources', 'private_resources']
 
     def get_all_resources(self, obj):
-        return ResourceSerializer(obj.resources.all(), many=True).data
+        return ResourceSerializer(
+            obj.resources.all(), many=True, context=self.context  # ✅ FIXED
+        ).data
 
     def get_default_resources(self, obj):
-        return ResourceSerializer(obj.resources.filter(owner__is_superuser=True), many=True).data
+        return ResourceSerializer(
+            obj.resources.filter(owner__is_superuser=True), many=True, context=self.context  # ✅ FIXED
+        ).data
 
     def get_private_resources(self, obj):
-        return ResourceSerializer(obj.resources.filter(access_type='private'), many=True).data
+        return ResourceSerializer(
+            obj.resources.filter(access_type='private'), many=True, context=self.context  # ✅ FIXED
+        ).data
 
 
 # 🧱 Nested Module > Chapters
