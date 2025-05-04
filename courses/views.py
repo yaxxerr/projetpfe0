@@ -143,7 +143,8 @@ class MyResourcesView(APIView):
     def get(self, request):
         if not request.user.is_professor():
             return Response({"detail": "Not allowed."}, status=403)
-
+        user = request.user
+        queryset = Resource.objects.filter(owner=user)  
         resources = Resource.objects.filter(owner=request.user)
         serializer = ResourceSerializer(queryset, many=True, context={"request": request})
         return Response(serializer.data)
@@ -219,19 +220,7 @@ class MyModuleResourcesView(APIView):
         serializer = ResourceSerializer(queryset, many=True, context={"request": request})
         return Response(serializer.data)
 
-class AddPublicResourceView(APIView):
-    permission_classes = [IsAuthenticated]
 
-    def post(self, request, resource_id):
-        user = request.user
-        try:
-            res = Resource.objects.get(id=resource_id, access_type='public')
-            if res in user.added_resources.all():
-                return Response({"detail": "Already added."}, status=400)
-            user.added_resources.add(res)
-            return Response({"detail": "✅ Resource added."})
-        except Resource.DoesNotExist:
-            return Response({"detail": "❌ Resource not found or not public."}, status=404)
 
 class RequestResourceAccessView(APIView):
     permission_classes = [IsAuthenticated]

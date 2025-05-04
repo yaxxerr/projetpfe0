@@ -18,9 +18,8 @@ from .views import (
     ResourceSearchFlexibleView,
     ModuleDetailView,
     MyModuleResourcesView,
-    AddPublicResourceView,
-    RequestResourceAccessView,
     HandleAccessRequestView,
+    RequestResourceAccessView
 )
 urlpatterns = [
     path('', views.index, name='courses-home'),
@@ -43,8 +42,6 @@ urlpatterns = [
     path('resources/search/', ResourceSearchFlexibleView.as_view(), name='flexible-resource-search'),
 
     # ✅ New resource control endpoints
-    path('resources/my/', MyModuleResourcesView.as_view(), name='my-module-resources'),
-    path('resources/add/<int:resource_id>/', AddPublicResourceView.as_view(), name='add-public-resource'),
     path('resources/request/<int:resource_id>/', RequestResourceAccessView.as_view(), name='request-resource-access'),
     path('resources/access-requests/received/', views.ReceivedAccessRequestsView.as_view(), name='received-access-requests'),
     path('resources/access-requests/sent/', views.SentAccessRequestsView.as_view(), name='sent-access-requests'),
