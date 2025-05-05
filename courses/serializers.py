@@ -17,7 +17,7 @@ class ResourceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Resource
-        fields = ['id','chapter', 'name', 'resource_type', 'access_type', 'link']
+        fields = ['id','chapter', 'name', 'resource_type', 'access_type', 'link',]
         read_only_fields = ['owner'] 
 
     def create(self, validated_data):
@@ -32,14 +32,13 @@ class ResourceSerializer(serializers.ModelSerializer):
         if obj.access_type == 'public':
             return obj.link
 
-        if obj.owner == user:
+        if user.is_authenticated and obj.owner == user:
             return obj.link
 
-        if AccessRequest.objects.filter(resource=obj, requester=user, approved=True).exists():
+        if user.is_authenticated and AccessRequest.objects.filter(resource=obj, requester=user, approved=True).exists():
             return obj.link
 
         return None  # or "🔒 Locked"
-
 
 # 🔍 For student search bar etc
 class UserSearchSerializer(serializers.ModelSerializer):
@@ -98,7 +97,6 @@ class ChapterSerializer(serializers.ModelSerializer):
         return ResourceSerializer(
             obj.resources.filter(access_type='private'), many=True, context=self.context  # ✅ FIXED
         ).data
-
 
 # 🧱 Nested Module > Chapters
 class ModuleSerializer(serializers.ModelSerializer):
