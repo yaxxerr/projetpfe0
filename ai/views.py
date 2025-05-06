@@ -20,6 +20,73 @@ from .serializers import (
 )
 from quizzes.models import Quiz, Question, Answer
 from courses.models import Module, Chapter
+# 📈 Performance Tracking (AI + Time + Quiz-Based)
+from datetime import timedelta
+from django.utils import timezone
+from quizzes.models import QuizSubmission
+
+class PerformanceTrackingListCreateView(generics.ListCreateAPIView):
+    queryset = PerformanceTracking.objects.all()
+    serializer_class = PerformanceTrackingSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        user = self.request.user
+
+        # Calculate time spent on platform (placeholder)
+        now = timezone.now()
+        past_tracking = PerformanceTracking.objects.filter(user=user).order_by('-created_at').first()
+        last_login = user.last_login or (now - timedelta(hours=1))  # fallback
+        time_spent = (now - last_login).total_seconds() / 60  # in minutes
+
+        # Extract quiz performance
+        all_submissions = QuizSubmission.objects.filter(student=user)
+        scores = [s.score for s in all_submissions if s.score is not None]
+        avg_score = round(sum(scores) / len(scores), 2) if scores else 0
+
+        # Simple logic to guess strong/weak modules
+        strong = set()
+        weak = set()
+        for s in all_submissions:
+            if s.score >= 70:
+                strong.add(s.quiz.module)
+            elif s.score <= 40:
+                weak.add(s.quiz.module)
+
+        # Ask OpenRouter to summarize performance (optional)
+        feedback_prompt = (
+            f"L'étudiant a une moyenne de {avg_score}%, a passé {len(scores)} quiz. "
+            f"Modules forts : {[m.name for m in strong]}. Modules faibles : {[m.name for m in weak]}. "
+            f"Donne des conseils personnalisés en français."
+        )
+        ai_feedback = self.ask_openrouter_feedback(feedback_prompt)
+
+        serializer.save(
+            user=user,
+            platform_time=round(time_spent),
+            average_score=avg_score,
+            feedback=ai_feedback
+        )
+
+    def ask_openrouter_feedback(self, message):
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": OPENROUTER_MODEL,
+            "messages": [
+                {"role": "system", "content": "Tu es un coach éducatif qui donne des feedbacks motivants."},
+                {"role": "user", "content": message},
+            ],
+        }
+        try:
+            response = requests.post(OPENROUTER_URL, headers=headers, json=payload, timeout=30)
+            response.raise_for_status()
+            return response.json()['choices'][0]['message']['content'].strip()
+        except:
+            return "Analyse indisponible pour le moment."
+
 
 # OpenRouter config
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "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")
@@ -237,10 +304,3 @@ class ProgramRecommendationListCreateView(generics.CreateAPIView):
             return "Erreur lors de la création du programme."
 
 # 📈 Performance Tracking
-class PerformanceTrackingListCreateView(generics.ListCreateAPIView):
-    queryset = PerformanceTracking.objects.all()
-    serializer_class = PerformanceTrackingSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)

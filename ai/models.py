@@ -82,40 +82,30 @@ class ProgramRecommendation(models.Model):
 
 
 
-class PerformanceTracking(models.Model):
-    user = models.ForeignKey(User, related_name='performance_trackings', on_delete=models.CASCADE)
-    strong_modules = models.ManyToManyField(Module, related_name='strong_in')
-    weak_modules = models.ManyToManyField(Module, related_name='weak_in')
-    platform_time = models.DurationField()
-    tracked_at = models.DateTimeField(auto_now_add=True)
+class InitialModuleRating(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="initial_ratings")
+    module = models.ForeignKey(Module, on_delete=models.CASCADE)
+    rating = models.IntegerField(choices=[(i, i) for i in range(1, 6)])
+    note = models.TextField(blank=True)
+    submitted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'module')
 
     def __str__(self):
-        return f"Performance for {self.user.username} at {self.tracked_at}"
+        return f"{self.user.username} rated {self.module.name}: {self.rating}"
 
-    def save(self, *args, **kwargs):
-        creating = self._state.adding
-        super().save(*args, **kwargs)
 
-        if creating:
-            total_minutes = round(self.platform_time.total_seconds() / 60)
+class PerformanceTracking(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='detailed_performance')
+    module = models.ForeignKey(Module, on_delete=models.CASCADE)
+    quiz_average_score = models.FloatField(default=0.0)
+    study_time = models.DurationField(default=0)
+    self_assessment = models.TextField(blank=True)
+    ai_feedback = models.TextField(blank=True)
+    progress_score = models.FloatField(default=0.0)  # AI-generated
+    last_updated = models.DateTimeField(auto_now=True)
 
-            Notification.objects.create(
-                recipient=self.user,
-                message=f"📊 Performance updated. You spent {total_minutes} minutes on the platform today."
-            )
-
-            weak = self.weak_modules.all()
-            if weak.exists():
-                weak_list = ", ".join([m.name for m in weak])
-                Notification.objects.create(
-                    recipient=self.user,
-                    message=f"⚠️ You’re struggling with: {weak_list}. Review these modules or try a practice quiz."
-                )
-
-            strong = self.strong_modules.all()
-            if strong.exists():
-                strong_list = ", ".join([m.name for m in strong])
-                Notification.objects.create(
-                    recipient=self.user,
-                    message=f"💪 You're doing great in: {strong_list}. Keep it up!"
-                )
+    def __str__(self):
+        return f"Performance for {self.user.username} in {self.module.name}"

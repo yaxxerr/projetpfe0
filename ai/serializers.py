@@ -66,12 +66,19 @@ class ProgramRecommendationSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'user', 'recommendation_text', 'created_at']
 class PerformanceTrackingSerializer(serializers.ModelSerializer):
     strong_modules = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Module.objects.all()
+        many=True, queryset=Module.objects.all(), required=False
     )
     weak_modules = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Module.objects.all()
+        many=True, queryset=Module.objects.all(), required=False
     )
+    average_score = serializers.FloatField(read_only=True)
+    platform_time = serializers.IntegerField(read_only=True)  # in minutes
+    feedback = serializers.CharField(read_only=True)
 
     class Meta:
         model = PerformanceTracking
-        fields = '__all__'
+        fields = [
+            'id', 'user', 'strong_modules', 'weak_modules',
+            'average_score', 'platform_time', 'feedback', 'created_at'
+        ]
+        read_only_fields = ['id', 'user', 'average_score', 'platform_time', 'feedback', 'created_at']
