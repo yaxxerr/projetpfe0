@@ -18,19 +18,20 @@ from .views import (
     ModuleDetailView,
     MyFollowersView,
     MyFollowingsView,
-    UnfollowProfessorView
+    UserProfileView,
+    UnfollowProfessorView,
+    ProfessorListView
 )
 
 urlpatterns = [
-    path('', views.index, name='users-home'),
-    path('users/', views.user_view, name='users-endpoint'),
-    path('professors/', views.professor_view, name='professors-endpoint'),
-    path('students/', views.student_view, name='students-endpoint'),
+
     path('all/', user_list, name='user-list'),
     path('<int:pk>/', user_detail, name='user-detail'),
+    path('professors/', ProfessorListView.as_view(), name='professor-list'),
     path('<int:pk>/update/', UserUpdateView.as_view(), name='user-update'),
     path('register/', RegisterView.as_view(), name='user-register'),
     path('login/', LoginView.as_view(), name='login'),
+    path("profile/<int:pk>/", UserProfileView.as_view(), name="user-profile"),
     path('me/', CurrentUserView.as_view(), name='me'),  
     path('me/edit/', UpdateMyProfileView.as_view(), name='update-my-profile'),
     path('my-profile/', MyProfileView.as_view(), name='my-profile'),

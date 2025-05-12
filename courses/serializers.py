@@ -17,7 +17,7 @@ class ResourceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Resource
-        fields = ['id','chapter', 'name', 'resource_type', 'access_type', 'link',]
+        fields = ['chapter', 'name', 'resource_type', 'access_type', 'link',]
         read_only_fields = ['owner'] 
 
     def create(self, validated_data):

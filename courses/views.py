@@ -151,7 +151,17 @@ class MyResourcesView(APIView):
 
 class ResourceUpdateView(APIView):
     permission_classes = [IsAuthenticated]
+    def patch(self, request, pk):
+        try:
+            resource = Resource.objects.get(pk=pk, owner=request.user)
+        except Resource.DoesNotExist:
+            return Response({"error": "Not found"}, status=404)
 
+        serializer = ResourceSerializer(resource, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
     def get(self, request):
         queryset = Resource.objects.filter(owner=request.user)  # ✅ access request properly
         serializer = ResourceSerializer(queryset, many=True, context={"request": request})

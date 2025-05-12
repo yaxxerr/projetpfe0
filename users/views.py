@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from .models import User, Follow
 from .serializers import (
     StudentSerializer,
@@ -117,11 +117,7 @@ class AssignModulesView(GenericAPIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# Simple messages
-def index(request): return HttpResponse("Welcome to users-endpoint")
-def user_view(request): return HttpResponse("users-endpoint")
-def professor_view(request): return HttpResponse("professors-endpoint")
-def student_view(request): return HttpResponse("students-endpoint")
+
 
 
 # GET user list
@@ -305,3 +301,23 @@ class UpdateMyProfileView(generics.UpdateAPIView):
         return self.request.user  # ✅ Très important !
 
 
+class ProfessorListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        professors = User.objects.filter(user_type='professor')
+        serializer = UserSerializer(professors, many=True, context={'request': request})
+        return Response(serializer.data)
+    
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        serializer = UserSerializer(user, context={"request": request})
+        is_following = user in request.user.following.all() if request.user != user else False
+
+        return Response({
+            "user": serializer.data,
+            "is_following": is_following
+        })
