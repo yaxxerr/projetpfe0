@@ -34,6 +34,7 @@ from rest_framework.generics import ListCreateAPIView, RetrieveAPIView, ListAPIV
 from django.contrib.auth import get_user_model
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework import status
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 from django.db.models import Q
@@ -312,3 +313,15 @@ class SentAccessRequestsView(APIView):
         ]
         return Response(data)
 
+class ProfessorResourcesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, professor_id):
+        try:
+            professor = User.objects.get(id=professor_id, user_type='professor')
+        except User.DoesNotExist:
+            return Response({"error": "Professeur introuvable."}, status=status.HTTP_404_NOT_FOUND)
+
+        resources = Resource.objects.filter(owner=professor)
+        serializer = ResourceSerializer(resources, many=True, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
