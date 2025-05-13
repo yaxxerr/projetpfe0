@@ -10,5 +10,5 @@ class NotificationSerializer(serializers.ModelSerializer):
 class AnnouncementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Announcement
-        fields = ['id', 'title', 'content', 'created_at', 'owner']
+        fields = ['id', 'title', 'content', 'created_at', 'owner', 'level', 'speciality']
         read_only_fields = ['owner', 'created_at']

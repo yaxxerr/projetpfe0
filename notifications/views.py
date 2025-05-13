@@ -40,26 +40,6 @@ class MyAnnouncementsView(generics.ListAPIView):
         ).order_by('-created_at')
 
 
-class AnnouncementView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request):
-        if not request.user.is_professor():
-            return Response({"detail": "Not allowed."}, status=403)
-
-        message = request.data.get("message")
-        if not message:
-            return Response({"detail": "Message required."}, status=400)
-
-        followers = request.user.followers.select_related('student')
-        for f in followers:
-            Notification.objects.create(
-    recipient=f.student,
-    message=f"📢 Announcement from {request.user.username}: {message}",
-    type='announcement' 
-)
-        return Response({"detail": "Announcement sent."})
-
 class MarkAllNotificationsReadView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -76,15 +56,27 @@ class CreateAnnouncementView(generics.CreateAPIView):
         if not user.is_professor():
             raise PermissionDenied("Only professors can post announcements.")
 
-        announcement = serializer.save(owner=user)
+        # Get filters
+        level = self.request.data.get('level')
+        speciality = self.request.data.get('speciality')
 
-        # 🔔 Send notifications to followers
+        announcement = serializer.save(owner=user, level=level, speciality=speciality)
+
+        # Send notifications
         followers = Follow.objects.filter(professor=user).select_related("student")
+        if level:
+            followers = followers.filter(student__level=level)
+        if speciality:
+            followers = followers.filter(student__speciality=speciality)
+
         for follow in followers:
             Notification.objects.create(
-                recipient=follow.student,
-                message=f"📢 New announcement from {user.username}: {announcement.title}"
-            )
+                    recipient=follow.student,
+                    message=f"📢 {announcement.title}: {announcement.content}",
+                    type='announcement',
+                    announcement=announcement  # 🔗 LINK IT!
+)
+
 
 class AnnouncementsByProfessorView(APIView):
     def get(self, request, professor_id):
