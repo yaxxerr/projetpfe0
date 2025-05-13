@@ -1,10 +1,14 @@
 from django.http import HttpResponse
 from rest_framework import generics, permissions
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
 from rest_framework.exceptions import NotFound
+from rest_framework.response import Response
 import requests
 import random
 import os
 import re
+from collections import defaultdict
 
 from .models import (
     ChatbotMessage,
@@ -27,48 +31,58 @@ from django.utils import timezone
 from quizzes.models import QuizSubmission
 from django.contrib.auth import get_user_model
 
-class PerformanceTrackingListCreateView(generics.ListCreateAPIView):
-    queryset = PerformanceTracking.objects.all()
-    serializer_class = PerformanceTrackingSerializer
-    permission_classes = [permissions.IsAuthenticated]
+class PerformanceStatsView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    def perform_create(self, serializer):
-        user = self.request.user
-
-        # Calculate time spent on platform (placeholder)
-        now = timezone.now()
-        past_tracking = PerformanceTracking.objects.filter(user=user).order_by('-created_at').first()
-        last_login = user.last_login or (now - timedelta(hours=1))  # fallback
-        time_spent = (now - last_login).total_seconds() / 60  # in minutes
-
-        # Extract quiz performance
-        all_submissions = QuizSubmission.objects.filter(student=user)
-        scores = [s.score for s in all_submissions if s.score is not None]
+    def get(self, request):
+        user = request.user
+        submissions = QuizSubmission.objects.filter(student=user).select_related('quiz__module')
+        scores = [s.score for s in submissions if s.score is not None]
         avg_score = round(sum(scores) / len(scores), 2) if scores else 0
 
-        # Simple logic to guess strong/weak modules
-        strong = set()
-        weak = set()
-        for s in all_submissions:
-            if s.score >= 70:
-                strong.add(s.quiz.module)
-            elif s.score <= 40:
-                weak.add(s.quiz.module)
+        module_scores = defaultdict(list)
+        for sub in submissions:
+            module_name = sub.quiz.module.name if sub.quiz and sub.quiz.module else "Inconnu"
+            module_scores[module_name].append(sub.score)
 
-        # Ask OpenRouter to summarize performance (optional)
+        strong = []
+        weak = []
+        inconsistent = []
+
+        for module, s_list in module_scores.items():
+            avg = sum(s_list) / len(s_list)
+            if avg >= 80:
+                strong.append(module)
+            elif avg <= 50:
+                weak.append(module)
+            else:
+                inconsistent.append(module)
+
+        recent_scores = [
+            {
+                "quiz": sub.quiz.title,
+                "module": sub.quiz.module.name if sub.quiz and sub.quiz.module else "Inconnu",
+                "score": sub.score
+            }
+            for sub in submissions.order_by('-submitted_at')[:5]
+        ]
+
         feedback_prompt = (
-            f"L'étudiant a une moyenne de {avg_score}%, a passé {len(scores)} quiz. "
-            f"Modules forts : {[m.name for m in strong]}. Modules faibles : {[m.name for m in weak]}. "
-            f"Donne des conseils personnalisés en français."
+            f"L'étudiant a une moyenne de {avg_score}%, a passé {len(scores)} quiz.\n"
+            f"Modules forts : {strong}\nModules faibles : {weak}\nModules irréguliers : {inconsistent}\n"
+            f"Donne un feedback personnalisé, motivant et clair."
         )
         ai_feedback = self.ask_openrouter_feedback(feedback_prompt)
 
-        serializer.save(
-            user=user,
-            platform_time=round(time_spent),
-            average_score=avg_score,
-            feedback=ai_feedback
-        )
+        return Response({
+            "total_quizzes": len(scores),
+            "average_score": avg_score,
+            "strong_modules": strong,
+            "weak_modules": weak,
+            "inconsistent_modules": inconsistent,
+            "recent_scores": recent_scores,
+            "ai_feedback": ai_feedback,
+        })
 
     def ask_openrouter_feedback(self, message):
         headers = {
@@ -88,7 +102,6 @@ class PerformanceTrackingListCreateView(generics.ListCreateAPIView):
             return response.json()['choices'][0]['message']['content'].strip()
         except:
             return "Analyse indisponible pour le moment."
-
 
 # OpenRouter config
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "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")

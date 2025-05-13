@@ -79,6 +79,6 @@ class PerformanceTrackingSerializer(serializers.ModelSerializer):
         model = PerformanceTracking
         fields = [
             'id', 'user', 'strong_modules', 'weak_modules',
-            'average_score', 'platform_time', 'feedback', 'created_at'
+            'average_score', 'platform_time', 'feedback'
         ]
-        read_only_fields = ['id', 'user', 'average_score', 'platform_time', 'feedback', 'created_at']
+        read_only_fields = ['id', 'user', 'average_score', 'platform_time', 'feedback']
