@@ -14,16 +14,17 @@ User = get_user_model()
 # 🧠 Resource Serializer with extra info
 class ResourceSerializer(serializers.ModelSerializer):
     link = serializers.SerializerMethodField()
+    owner_name = serializers.SerializerMethodField()  # Add owner name field
 
     class Meta:
         model = Resource
-        fields = ['chapter', 'name', 'resource_type', 'access_type', 'link',]
-        read_only_fields = ['owner'] 
+        fields = ['chapter', 'name', 'resource_type', 'access_type', 'link', 'created_at', 'owner_name','id']
+        read_only_fields = ['owner', 'created_at','id']  # Ensure created_at is read-only
 
     def create(self, validated_data):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            validated_data['owner'] = request.user  # 👈 assign the logged-in user
+            validated_data['owner'] = request.user  # Assign the logged-in user
         return super().create(validated_data)
 
     def get_link(self, obj):
@@ -39,6 +40,9 @@ class ResourceSerializer(serializers.ModelSerializer):
             return obj.link
 
         return None  # or "🔒 Locked"
+
+    def get_owner_name(self, obj):
+        return obj.owner.username if obj.owner else None  # Return owner's username
 
 # 🔍 For student search bar etc
 class UserSearchSerializer(serializers.ModelSerializer):
