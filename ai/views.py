@@ -1,5 +1,6 @@
 from django.http import HttpResponse
 from rest_framework import generics, permissions
+from rest_framework.exceptions import NotFound
 import requests
 import random
 import os
@@ -24,6 +25,7 @@ from courses.models import Module, Chapter
 from datetime import timedelta
 from django.utils import timezone
 from quizzes.models import QuizSubmission
+from django.contrib.auth import get_user_model
 
 class PerformanceTrackingListCreateView(generics.ListCreateAPIView):
     queryset = PerformanceTracking.objects.all()
@@ -302,5 +304,18 @@ class ProgramRecommendationListCreateView(generics.CreateAPIView):
         except requests.exceptions.RequestException as e:
             print(f"[Erreur OpenRouter Programme] {e}")
             return "Erreur lors de la création du programme."
+ 
+User = get_user_model()
 
-# 📈 Performance Tracking
+class UserProgramRecommendationListView(generics.ListAPIView):
+    serializer_class = ProgramRecommendationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user_id = self.kwargs.get("user_id")
+        try:
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            raise NotFound("User not found.")
+
+        return ProgramRecommendation.objects.filter(user=user).order_by("-id")
