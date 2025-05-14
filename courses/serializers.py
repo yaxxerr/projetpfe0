@@ -11,30 +11,24 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-# 🧠 Resource Serializer with extra info
+# 🧠 Resource Serializer (for listing resources)
 class ResourceSerializer(serializers.ModelSerializer):
     link = serializers.SerializerMethodField()
-
-    owner_name = serializers.SerializerMethodField()  # Add owner name field
-
-    class Meta:
-        model = Resource
-        fields = ['chapter', 'name', 'resource_type', 'access_type', 'link', 'created_at', 'owner_name','id']
-        read_only_fields = ['owner', 'created_at','id']  # Ensure created_at is read-only
-
+    owner_name = serializers.SerializerMethodField()
     owner_username = serializers.CharField(source='owner.username', read_only=True)
 
-
     class Meta:
         model = Resource
-        fields = ['id','chapter', 'name', 'resource_type', 'access_type', 'link','created_at','owner_username','owner']
-        read_only_fields = ['owner_username'] 
-
+        fields = [
+            'id', 'chapter', 'name', 'resource_type', 'access_type',
+            'link', 'created_at', 'owner', 'owner_username', 'owner_name'
+        ]
+        read_only_fields = ['owner', 'created_at', 'owner_username', 'owner_name']
 
     def create(self, validated_data):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
-            validated_data['owner'] = request.user  # Assign the logged-in user
+            validated_data['owner'] = request.user
         return super().create(validated_data)
 
     def get_link(self, obj):
@@ -46,21 +40,23 @@ class ResourceSerializer(serializers.ModelSerializer):
         if user.is_authenticated and obj.owner == user:
             return obj.link
 
-        if user.is_authenticated and AccessRequest.objects.filter(resource=obj, requester=user, approved=True).exists():
+        if user.is_authenticated and AccessRequest.objects.filter(
+            resource=obj, requester=user, approved=True
+        ).exists():
             return obj.link
 
-        return None  # or "🔒 Locked"
+        return None  # 🔒 Locked
 
     def get_owner_name(self, obj):
-        return obj.owner.username if obj.owner else None  # Return owner's username
+        return obj.owner.username if obj.owner else None
 
-# 🔍 For student search bar etc
+# 🔍 For student/professor search bars
 class UserSearchSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'user_type']
 
-# 🔗 Resource request serializer
+# 🔗 Access request serializer
 class AccessRequestSerializer(serializers.ModelSerializer):
     resource_name = serializers.CharField(source='resource.name', read_only=True)
     requester_username = serializers.CharField(source='requester.username', read_only=True)
@@ -87,7 +83,7 @@ class AccessRequestSerializer(serializers.ModelSerializer):
             'created_at'
         ]
 
-# 🧩 Nested Chapter > Resources
+# 📦 Chapter serializer (with nested resource views)
 class ChapterSerializer(serializers.ModelSerializer):
     all_resources = serializers.SerializerMethodField()
     default_resources = serializers.SerializerMethodField()
@@ -95,24 +91,18 @@ class ChapterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Chapter
-        fields = ['id', 'name', 'module' , 'all_resources', 'default_resources', 'private_resources']
+        fields = ['id', 'name', 'module', 'all_resources', 'default_resources', 'private_resources']
 
     def get_all_resources(self, obj):
-        return ResourceSerializer(
-            obj.resources.all(), many=True, context=self.context  # ✅ FIXED
-        ).data
+        return ResourceSerializer(obj.resources.all(), many=True, context=self.context).data
 
     def get_default_resources(self, obj):
-        return ResourceSerializer(
-            obj.resources.filter(owner__is_superuser=True), many=True, context=self.context  # ✅ FIXED
-        ).data
+        return ResourceSerializer(obj.resources.filter(owner__is_superuser=True), many=True, context=self.context).data
 
     def get_private_resources(self, obj):
-        return ResourceSerializer(
-            obj.resources.filter(access_type='private'), many=True, context=self.context  # ✅ FIXED
-        ).data
+        return ResourceSerializer(obj.resources.filter(access_type='private'), many=True, context=self.context).data
 
-# 🧱 Nested Module > Chapters
+# 📘 Module serializer (with chapters)
 class ModuleSerializer(serializers.ModelSerializer):
     chapters = ChapterSerializer(many=True, read_only=True)
 
@@ -120,7 +110,7 @@ class ModuleSerializer(serializers.ModelSerializer):
         model = Module
         fields = ['id', 'name', 'description', 'speciality', 'level', 'chapters']
 
-# 📚 Level includes its modules
+# 🎓 Level serializer (with modules)
 class LevelSerializer(serializers.ModelSerializer):
     module_set = ModuleSerializer(many=True, read_only=True)
 
@@ -128,7 +118,7 @@ class LevelSerializer(serializers.ModelSerializer):
         model = Level
         fields = ['id', 'name', 'description', 'module_set']
 
-# 🧠 Speciality > Levels
+# 🧠 Speciality serializer (with levels)
 class SpecialitySerializer(serializers.ModelSerializer):
     levels = LevelSerializer(many=True, read_only=True, source='level_set')
 
