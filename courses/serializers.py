@@ -14,12 +14,22 @@ User = get_user_model()
 # 🧠 Resource Serializer with extra info
 class ResourceSerializer(serializers.ModelSerializer):
     link = serializers.SerializerMethodField()
+<<<<<<< Updated upstream
     owner_name = serializers.SerializerMethodField()  # Add owner name field
 
     class Meta:
         model = Resource
         fields = ['chapter', 'name', 'resource_type', 'access_type', 'link', 'created_at', 'owner_name','id']
         read_only_fields = ['owner', 'created_at','id']  # Ensure created_at is read-only
+=======
+    owner_username = serializers.CharField(source='owner.username', read_only=True)
+
+
+    class Meta:
+        model = Resource
+        fields = ['id','chapter', 'name', 'resource_type', 'access_type', 'link','created_at','owner_username','owner']
+        read_only_fields = ['owner_username'] 
+>>>>>>> Stashed changes
 
     def create(self, validated_data):
         request = self.context.get('request')

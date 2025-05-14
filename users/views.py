@@ -24,7 +24,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.generics import GenericAPIView, RetrieveAPIView
 from courses.models import Module
 from courses.serializers import ModuleSerializer, ResourceSerializer
-from rest_framework.views import APIView
+from rest_framework.decorators import api_view, permission_classes
+
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from courses.models import Module, Chapter, Resource
@@ -301,6 +302,7 @@ class UpdateMyProfileView(generics.UpdateAPIView):
         return self.request.user  # ✅ Très important !
 
 
+<<<<<<< Updated upstream
 class ProfessorListView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -321,3 +323,23 @@ class UserProfileView(APIView):
             "user": serializer.data,
             "is_following": is_following
         })
+=======
+# ✅ Endpoint pour obtenir les infos du professeur connecté
+# ✅ Endpoint pour obtenir les infos du professeur connecté
+# ✅ Endpoint pour obtenir les infos du professeur connecté
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def professor_view(request):
+    user = request.user
+    if user.user_type != 'professor':
+        return Response({'error': 'Access denied'}, status=403)
+
+    return JsonResponse({
+        "username": user.username,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "email": user.email,
+        "user_type": user.user_type,
+        "profile_photo": user.profile_photo.url if user.profile_photo else None
+    })
+>>>>>>> Stashed changes

@@ -43,8 +43,13 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = '__all__'
+        fields = [
+            "id", "username", "email", "user_type",
+            "bio", "background", "profile_photo",
+            "speciality", "level", "modules"
+        ]
         read_only_fields = ['id', 'username', 'email', 'user_type']
+
 
 class StudentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -55,11 +60,6 @@ class UserBasicSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'user_type']
-
-class UserUpdateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['username','password', 'email', 'bio', 'background', 'profile_photo', 'speciality', 'level']
 
 
 from rest_framework import serializers
