@@ -302,7 +302,6 @@ class UpdateMyProfileView(generics.UpdateAPIView):
         return self.request.user  # ✅ Très important !
 
 
-<<<<<<< Updated upstream
 class ProfessorListView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -323,7 +322,7 @@ class UserProfileView(APIView):
             "user": serializer.data,
             "is_following": is_following
         })
-=======
+
 # ✅ Endpoint pour obtenir les infos du professeur connecté
 # ✅ Endpoint pour obtenir les infos du professeur connecté
 # ✅ Endpoint pour obtenir les infos du professeur connecté
@@ -342,4 +341,4 @@ def professor_view(request):
         "user_type": user.user_type,
         "profile_photo": user.profile_photo.url if user.profile_photo else None
     })
->>>>>>> Stashed changes
+

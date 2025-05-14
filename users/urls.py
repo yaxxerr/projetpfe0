@@ -1,4 +1,5 @@
 from django.urls import path
+from .views import professor_view, ProfessorListView
 from . import views
 from .views import (
     user_list,
@@ -28,6 +29,7 @@ urlpatterns = [
     path('all/', user_list, name='user-list'),
     path('<int:pk>/', user_detail, name='user-detail'),
     path('professors/', ProfessorListView.as_view(), name='professor-list'),
+    path('professor/', professor_view, name='professor-info'),  # ✅ AJOUTE CECI
     path('<int:pk>/update/', UserUpdateView.as_view(), name='user-update'),
     path('register/', RegisterView.as_view(), name='user-register'),
     path('login/', LoginView.as_view(), name='login'),
