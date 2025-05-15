@@ -100,7 +100,7 @@ class QuizSubmission(models.Model):
 
         for question in self.quiz.questions.all():
             correct_answers = set(question.answers.filter(is_correct=True))
-            selected = set(self.selected_answers.filter(question=question))
+            selected = set(a for a in self.selected_answers.all() if a.question == question)
             if selected == correct_answers:
                 correct += 1
 
@@ -115,5 +115,5 @@ class QuizSubmission(models.Model):
     def save(self, *args, **kwargs):
         creating = self._state.adding
         super().save(*args, **kwargs)
-        if creating:
+        if creating and self.score == 0.0:
             self.calculate_score()

@@ -1,15 +1,12 @@
 from rest_framework import generics, viewsets
 from rest_framework.permissions import IsAuthenticated
-from .models import Quiz, QuizSubmission, Question, Answer
-from .serializers import QuizSerializer, QuizSubmissionSerializer, QuestionSerializer, AnswerSerializer
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
-from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
-from .models import Quiz
-from .serializers import QuizSerializer
+from .models import Quiz, QuizSubmission, Question, Answer
+from .serializers import QuizSerializer, QuizSubmissionSerializer, QuestionSerializer, AnswerSerializer
 
+# ✅ Filtered list by chapter or module
 class QuizFilteredListView(generics.ListAPIView):
     serializer_class = QuizSerializer
     permission_classes = [IsAuthenticated]
@@ -25,7 +22,6 @@ class QuizFilteredListView(generics.ListAPIView):
             queryset = queryset.filter(module__id=module_id)
 
         return queryset
-
 
 
 # 🔍 Full CRUD for Quizzes
@@ -59,9 +55,24 @@ class QuizSubmissionCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def perform_create(self, serializer):
+        # Save the submission without selected answers first
         submission = serializer.save(student=self.request.user)
+
+        # Fetch selected answers from request and assign after save
+        selected_ids = self.request.data.get('selected_answers', [])
+
+        # handle stringified JSON if sent as string
+        if isinstance(selected_ids, str):
+            import json
+            selected_ids = json.loads(selected_ids)
+
+        submission.selected_answers.set(selected_ids)
+
+        # 🔥 Calculate score now that M2M is populated
         submission.calculate_score()
 
+        print("✅ Stored selected answers:", list(submission.selected_answers.all()))
+        print("✅ Final score:", submission.score)
 
 # ✅ GET: List all quiz submissions
 class QuizSubmissionListView(generics.ListAPIView):

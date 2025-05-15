@@ -1,4 +1,3 @@
-# quizzes/serializers.py
 from rest_framework import serializers
 from .models import Quiz, Question, Answer, QuizSubmission
 
@@ -18,7 +17,6 @@ class QuestionSerializer(serializers.ModelSerializer):
 
 
 class QuizSerializer(serializers.ModelSerializer):
-    # Accept module and chapter as IDs in write operations, but show names in read
     module = serializers.PrimaryKeyRelatedField(queryset=Quiz._meta.get_field('module').remote_field.model.objects.all())
     chapter = serializers.PrimaryKeyRelatedField(
         queryset=Quiz._meta.get_field('chapter').remote_field.model.objects.all(),
@@ -27,12 +25,17 @@ class QuizSerializer(serializers.ModelSerializer):
     created_by = serializers.StringRelatedField(read_only=True)
     questions = QuestionSerializer(many=True, read_only=True)
 
+    # ✅ Extra fields for display
+    chapter_name = serializers.CharField(source='chapter.name', read_only=True)
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+
     class Meta:
         model = Quiz
         fields = [
             'id', 'title', 'description', 'duration', 'type',
             'module', 'chapter', 'created_by',
-            'creation_mode', 'created_at', 'visibility', 'questions'
+            'creation_mode', 'created_at', 'visibility', 'questions',
+            'chapter_name', 'created_by_username'  # ✅ Include these
         ]
 
 
@@ -41,8 +44,10 @@ class QuizSubmissionSerializer(serializers.ModelSerializer):
         queryset=Answer.objects.all(),
         many=True
     )
+    student = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = QuizSubmission
         fields = ['id', 'quiz', 'student', 'selected_answers', 'submitted_at', 'score']
-        read_only_fields = ['id', 'submitted_at', 'score']
+        read_only_fields = ['id', 'submitted_at', 'score', 'student']
+
