@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import professor_view, ProfessorListView
+from .views import professor_view, ProfessorListView, ProfessorModulesView
 from . import views
 from .views import (
     user_list,
@@ -42,6 +42,7 @@ urlpatterns = [
     path('search/', UserSearchView.as_view(), name='users-search'),
     path('my-modules/', MyModulesView.as_view(), name='users-modules'),
     path('assign-my-modules/', AssignModulesView.as_view(), name='assign-my-modules'),
+    path('choosemodules/', ProfessorModulesView.as_view(), name='professor-modules'),
     path('follow/', FollowProfessorView.as_view(), name='follow-professor'),
     path('my-followers/', MyFollowersView.as_view(), name='my-followers'),
     path('my-followings/', MyFollowingsView.as_view(), name='my-followings'),

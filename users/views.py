@@ -30,6 +30,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from courses.models import Module, Chapter, Resource
 from courses.serializers import ModuleSerializer
+from courses.models import Level, Speciality
+
 
 
 class MyModulesView(APIView):
@@ -83,6 +85,8 @@ class MyModulesView(APIView):
         return Response(data)
 
 # ✅ REGISTER (version de ton ami)
+
+
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
 
@@ -91,8 +95,21 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        # ✅ Automatically assign modules after user is created
-        user.assign_modules_to_student()
+        if user.user_type == "professor":
+            # 🔧 Auto-assign "teacher" level and speciality if professor
+            try:
+                teacher_level = Level.objects.get(name__iexact="teacher")
+                teacher_spec = Speciality.objects.get(name__iexact="teacher")
+                user.level = teacher_level
+                user.speciality = teacher_spec
+                user.save()
+            except (Level.DoesNotExist, Speciality.DoesNotExist):
+                return Response({
+                    "error": "❌ 'teacher' level or speciality not found in database."
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            # ✅ For students, assign modules normally
+            user.assign_modules_to_student()
 
         return Response({
             "message": "✅ Inscription réussie",
@@ -342,3 +359,31 @@ def professor_view(request):
         "profile_photo": user.profile_photo.url if user.profile_photo else None
     })
 
+class ProfessorModulesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        modules = Module.objects.all().order_by('name')
+        serializer = ModuleSerializer(modules, many=True, context={"request": request})
+        selected_module_ids = list(request.user.modules.values_list("id", flat=True))
+        return Response({
+            "all_modules": serializer.data,
+            "selected_module_ids": selected_module_ids
+        }, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        user = request.user
+        if not user.is_professor():
+            return Response({"detail": "Only professors can assign modules."},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        module_ids = request.data.get("module_ids", [])
+        if not isinstance(module_ids, list):
+            return Response({"detail": "'module_ids' must be a list."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        modules = Module.objects.filter(id__in=module_ids)
+        user.modules.set(modules)
+        user.save()
+
+        return Response({"detail": "✅ Modules assigned successfully."}, status=status.HTTP_200_OK)
