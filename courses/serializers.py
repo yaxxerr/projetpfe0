@@ -20,11 +20,16 @@ class ResourceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Resource
+<<<<<<< Updated upstream
         fields = [
             'id', 'chapter', 'name', 'resource_type', 'access_type', 'access_approved' ,
             'link', 'created_at', 'owner', 'owner_username', 'owner_name'
         ]
         read_only_fields = ['owner', 'created_at','access_approved', 'owner_username', 'owner_name']
+=======
+        fields = ['id', 'chapter', 'name', 'resource_type', 'access_type', 'link', 'created_at', 'owner_username', 'owner', 'owner_name']
+        read_only_fields = ['owner', 'created_at', 'id', 'owner_username']
+>>>>>>> Stashed changes
 
     def create(self, validated_data):
         request = self.context.get('request')
@@ -42,19 +47,13 @@ class ResourceSerializer(serializers.ModelSerializer):
 
     def get_link(self, obj):
         user = self.context['request'].user
-
         if obj.access_type == 'public':
             return obj.link
-
         if user.is_authenticated and obj.owner == user:
             return obj.link
-
-        if user.is_authenticated and AccessRequest.objects.filter(
-            resource=obj, requester=user, approved=True
-        ).exists():
+        if user.is_authenticated and AccessRequest.objects.filter(resource=obj, requester=user, approved=True).exists():
             return obj.link
-
-        return None  # 🔒 Locked
+        return None
 
     def get_owner_name(self, obj):
         return obj.owner.username if obj.owner else None
@@ -103,13 +102,19 @@ class ChapterSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'module', 'all_resources', 'default_resources', 'private_resources']
 
     def get_all_resources(self, obj):
-        return ResourceSerializer(obj.resources.all(), many=True, context=self.context).data
+        return ResourceSerializer(
+            obj.resources.all(), many=True, context=self.context
+        ).data
 
     def get_default_resources(self, obj):
-        return ResourceSerializer(obj.resources.filter(owner__is_superuser=True), many=True, context=self.context).data
+        return ResourceSerializer(
+            obj.resources.filter(owner__is_superuser=True), many=True, context=self.context
+        ).data
 
     def get_private_resources(self, obj):
-        return ResourceSerializer(obj.resources.filter(access_type='private'), many=True, context=self.context).data
+        return ResourceSerializer(
+            obj.resources.filter(access_type='private'), many=True, context=self.context
+        ).data
 
 # 📘 Module serializer (with chapters)
 class ModuleSerializer(serializers.ModelSerializer):

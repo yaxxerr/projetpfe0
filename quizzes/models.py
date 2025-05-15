@@ -37,18 +37,19 @@ class Quiz(models.Model):
 
     def save(self, *args, **kwargs):
         creating = self._state.adding
+
+        # Save first to access related objects
         super().save(*args, **kwargs)
 
         if creating:
+            # Determine visibility
             if self.created_by and self.created_by.user_type == 'student':
-                # Created by student ➔ private quiz
                 self.visibility = 'private'
-                super().save(update_fields=['visibility'])  # Save updated visibility
+                self.save(update_fields=['visibility'])
                 self.students_allowed.set([self.created_by])
             else:
-                # Created by professor ➔ public quiz
                 self.visibility = 'public'
-                super().save(update_fields=['visibility'])
+                self.save(update_fields=['visibility'])
 
                 if self.creation_mode == 'manual' and self.created_by:
                     Notification.objects.create(
@@ -56,16 +57,18 @@ class Quiz(models.Model):
                         message=f"You created a new quiz titled '{self.title}'."
                     )
 
-                students = User.objects.filter(
-                    user_type='student',
-                    level=self.module.level,
-                    speciality=self.module.speciality
-                )
-                for student in students:
-                    Notification.objects.create(
-                        recipient=student,
-                        message=f"A new quiz '{self.title}' is available for your module: {self.module.name}."
+                if self.module:
+                    students = User.objects.filter(
+                        user_type='student',
+                        level=self.module.level,
+                        speciality=self.module.speciality
                     )
+                    for student in students:
+                        Notification.objects.create(
+                            recipient=student,
+                            message=f"A new quiz '{self.title}' is available for your module: {self.module.name}."
+                        )
+
 
 class Question(models.Model):
     quiz = models.ForeignKey(Quiz, related_name='questions', on_delete=models.CASCADE)
@@ -74,6 +77,7 @@ class Question(models.Model):
     def __str__(self):
         return f"Q: {self.text}"
 
+
 class Answer(models.Model):
     question = models.ForeignKey(Question, related_name='answers', on_delete=models.CASCADE)
     text = models.CharField(max_length=255)
@@ -81,6 +85,7 @@ class Answer(models.Model):
 
     def __str__(self):
         return f"{self.text} ({'Correct' if self.is_correct else 'Wrong'})"
+
 
 class QuizSubmission(models.Model):
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
@@ -99,10 +104,9 @@ class QuizSubmission(models.Model):
             if selected == correct_answers:
                 correct += 1
 
-        self.score = round((correct / total_questions) * 100, 2)
-        self.save()
+        self.score = round((correct / total_questions) * 100, 2) if total_questions > 0 else 0.0
+        self.save(update_fields=['score'])
 
-        # Notify the student
         Notification.objects.create(
             recipient=self.student,
             message=f"📊 You scored {self.score}% on quiz '{self.quiz.title}'."
