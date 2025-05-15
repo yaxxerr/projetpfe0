@@ -15,7 +15,8 @@ User = get_user_model()
 # 🔐 Registration serializer
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
-
+    level = serializers.PrimaryKeyRelatedField(queryset=Level.objects.all(), required=False)
+    speciality = serializers.PrimaryKeyRelatedField(queryset=Speciality.objects.all(), required=False)
     class Meta:
         model = User
         fields = [

@@ -11,15 +11,20 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-# 🧠 Resource Serializer with extra info
+# 🧠 Resource Serializer with full access logic and user info
 class ResourceSerializer(serializers.ModelSerializer):
     link = serializers.SerializerMethodField()
+    owner_name = serializers.SerializerMethodField()
     owner_username = serializers.CharField(source='owner.username', read_only=True)
+    access_approved = serializers.SerializerMethodField()
 
     class Meta:
         model = Resource
-        fields = ['id', 'chapter', 'name', 'resource_type', 'access_type', 'link', 'created_at', 'owner_username', 'owner']
-        read_only_fields = ['owner_username']
+        fields = [
+            'id', 'chapter', 'name', 'resource_type', 'access_type', 'access_approved',
+            'link', 'created_at', 'owner', 'owner_username', 'owner_name'
+        ]
+        read_only_fields = ['owner', 'created_at', 'access_approved', 'owner_username', 'owner_name']
 
     def create(self, validated_data):
         request = self.context.get('request')
@@ -27,27 +32,39 @@ class ResourceSerializer(serializers.ModelSerializer):
             validated_data['owner'] = request.user
         return super().create(validated_data)
 
-    def get_link(self, obj):
-        user = self.context['request'].user
+    def get_access_approved(self, obj):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        if not user or not user.is_authenticated:
+            return False
+        return AccessRequest.objects.filter(
+            resource=obj,
+            requester=user,
+            approved=True
+        ).exists()
 
+    def get_link(self, obj):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
         if obj.access_type == 'public':
             return obj.link
-
-        if user.is_authenticated and obj.owner == user:
-            return obj.link
-
-        if user.is_authenticated and AccessRequest.objects.filter(resource=obj, requester=user, approved=True).exists():
-            return obj.link
-
+        if user and user.is_authenticated:
+            if obj.owner == user or AccessRequest.objects.filter(resource=obj, requester=user, approved=True).exists():
+                return obj.link
         return None
 
-# 🔍 For student search bar etc
+    def get_owner_name(self, obj):
+        return obj.owner.username if obj.owner else None
+
+
+# 🔍 For student/professor search bars
 class UserSearchSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'user_type']
 
-# 🔗 Resource request serializer
+
+# 🔗 Access request serializer
 class AccessRequestSerializer(serializers.ModelSerializer):
     resource_name = serializers.CharField(source='resource.name', read_only=True)
     requester_username = serializers.CharField(source='requester.username', read_only=True)
@@ -74,7 +91,8 @@ class AccessRequestSerializer(serializers.ModelSerializer):
             'created_at'
         ]
 
-# 🧩 Nested Chapter > Resources
+
+# 📦 Chapter serializer (with nested resource views)
 class ChapterSerializer(serializers.ModelSerializer):
     all_resources = serializers.SerializerMethodField()
     default_resources = serializers.SerializerMethodField()
@@ -108,7 +126,8 @@ class ChapterSerializer(serializers.ModelSerializer):
             obj.resources.filter(access_type='private'), many=True, context=self.context
         ).data
 
-# 🧱 Nested Module > Chapters
+
+# 📘 Module serializer (with chapters)
 class ModuleSerializer(serializers.ModelSerializer):
     chapters = ChapterSerializer(many=True, read_only=True)
 
@@ -116,7 +135,8 @@ class ModuleSerializer(serializers.ModelSerializer):
         model = Module
         fields = ['id', 'name', 'description', 'speciality', 'level', 'chapters']
 
-# 📚 Level includes its modules
+
+# 🎓 Level serializer (with modules)
 class LevelSerializer(serializers.ModelSerializer):
     module_set = ModuleSerializer(many=True, read_only=True)
 
@@ -124,7 +144,8 @@ class LevelSerializer(serializers.ModelSerializer):
         model = Level
         fields = ['id', 'name', 'description', 'module_set']
 
-# 🧠 Speciality > Levels
+
+# 🧠 Speciality serializer (with levels)
 class SpecialitySerializer(serializers.ModelSerializer):
     levels = LevelSerializer(many=True, read_only=True, source='level_set')
 
