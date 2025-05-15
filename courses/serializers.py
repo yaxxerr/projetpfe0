@@ -20,16 +20,11 @@ class ResourceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Resource
-<<<<<<< Updated upstream
         fields = [
             'id', 'chapter', 'name', 'resource_type', 'access_type', 'access_approved' ,
             'link', 'created_at', 'owner', 'owner_username', 'owner_name'
         ]
         read_only_fields = ['owner', 'created_at','access_approved', 'owner_username', 'owner_name']
-=======
-        fields = ['id', 'chapter', 'name', 'resource_type', 'access_type', 'link', 'created_at', 'owner_username', 'owner', 'owner_name']
-        read_only_fields = ['owner', 'created_at', 'id', 'owner_username']
->>>>>>> Stashed changes
 
     def create(self, validated_data):
         request = self.context.get('request')
