@@ -26,11 +26,7 @@ class Announcement(models.Model):
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="announcements")
-    announcement = models.ForeignKey(
-        'Announcement', null=True, blank=True,
-        on_delete=models.CASCADE,
-        related_name='notifications'
-    )
+   
     # 🎯 NEW FILTER FIELDS
     level = models.CharField(max_length=50, blank=True, null=True)
     speciality = models.CharField(max_length=100, blank=True, null=True)

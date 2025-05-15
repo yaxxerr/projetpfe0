@@ -60,23 +60,23 @@ class CreateAnnouncementView(generics.CreateAPIView):
         level = self.request.data.get('level')
         speciality = self.request.data.get('speciality')
 
+        # Save the announcement
         announcement = serializer.save(owner=user, level=level, speciality=speciality)
 
-        # Send notifications
+        # Filter followers based on level and speciality
         followers = Follow.objects.filter(professor=user).select_related("student")
         if level:
             followers = followers.filter(student__level=level)
         if speciality:
             followers = followers.filter(student__speciality=speciality)
 
+        # Create a notification for each matching student
         for follow in followers:
             Notification.objects.create(
-                    recipient=follow.student,
-                    message=f"📢 {announcement.title}: {announcement.content}",
-                    type='announcement',
-                    announcement=announcement  # 🔗 LINK IT!
-)
-
+                recipient=follow.student,
+                message=f"📢 {announcement.title}: {announcement.content}",
+                type='announcement'
+            )
 
 class AnnouncementsByProfessorView(APIView):
     def get(self, request, professor_id):

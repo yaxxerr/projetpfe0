@@ -16,20 +16,29 @@ class ResourceSerializer(serializers.ModelSerializer):
     link = serializers.SerializerMethodField()
     owner_name = serializers.SerializerMethodField()
     owner_username = serializers.CharField(source='owner.username', read_only=True)
+    access_approved = serializers.SerializerMethodField()
 
     class Meta:
         model = Resource
         fields = [
-            'id', 'chapter', 'name', 'resource_type', 'access_type',
+            'id', 'chapter', 'name', 'resource_type', 'access_type', 'access_approved' ,
             'link', 'created_at', 'owner', 'owner_username', 'owner_name'
         ]
-        read_only_fields = ['owner', 'created_at', 'owner_username', 'owner_name']
+        read_only_fields = ['owner', 'created_at','access_approved', 'owner_username', 'owner_name']
 
     def create(self, validated_data):
         request = self.context.get('request')
         if request and request.user.is_authenticated:
             validated_data['owner'] = request.user
         return super().create(validated_data)
+
+    def get_access_approved(self, obj):
+        user = self.context['request'].user
+        return AccessRequest.objects.filter(
+            resource=obj,
+            requester=user,
+            approved=True
+        ).exists()
 
     def get_link(self, obj):
         user = self.context['request'].user
