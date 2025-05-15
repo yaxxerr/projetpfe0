@@ -48,15 +48,19 @@ def index(request):
 
 # 🔹 GET + POST views
 class SpecialityListCreateView(generics.ListCreateAPIView):
-    queryset = Speciality.objects.all()
     serializer_class = SpecialitySerializer
     permission_classes = [AllowAny]
 
+    def get_queryset(self):
+        return Speciality.objects.exclude(name__iexact='teacher')
+
+
 class LevelListCreateView(generics.ListCreateAPIView):
-    queryset = Level.objects.all()
     serializer_class = LevelSerializer
     permission_classes = [AllowAny]
 
+    def get_queryset(self):
+        return Level.objects.exclude(name__iexact='teacher')
 class ModuleListCreateView(generics.ListCreateAPIView):
     queryset = Module.objects.all()
     serializer_class = ModuleSerializer
