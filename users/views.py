@@ -10,7 +10,7 @@ from .serializers import (
     UserUpdateSerializer,
     FollowingSerializer
 )
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django.http import HttpResponse, JsonResponse
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import generics, permissions, status
@@ -363,13 +363,20 @@ class ProfessorModulesView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        modules = Module.objects.all().order_by('name')
+        user = request.user
+        if not user.is_professor():
+            return Response({"detail": "Only professors can view assigned modules."}, status=status.HTTP_403_FORBIDDEN)
+
+        modules = user.modules.all().order_by("name")
+
+        resource_qs = Resource.objects.filter(owner=user)
+        chapters_qs = Chapter.objects.prefetch_related(
+            Prefetch("resources", queryset=resource_qs)
+        )
+        modules = modules.prefetch_related(Prefetch("chapters", queryset=chapters_qs))
+
         serializer = ModuleSerializer(modules, many=True, context={"request": request})
-        selected_module_ids = list(request.user.modules.values_list("id", flat=True))
-        return Response({
-            "all_modules": serializer.data,
-            "selected_module_ids": selected_module_ids
-        }, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request):
         user = request.user
