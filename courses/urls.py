@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-from .views import SpecialityListCreateView, LevelListCreateView, ModuleListCreateView, ChapterListCreateView, ModuleSearchView, ChapterSearchView, ResourceSearchView
+from .views import LevelsBySpecialityView, SpecialityListCreateView, LevelListCreateView, ModuleListCreateView, ChapterListCreateView, ModuleSearchView, ChapterSearchView, ResourceSearchView
 from django.urls import path
 from .views import ResourceListCreateView,MyResourcesView,ResourceDeleteView,ResourceUpdateView, AccessRequestListCreateView,ResourceSearchFlexibleView, ProfessorResourcesView
 from .views import ModuleDetailView
@@ -35,6 +35,7 @@ urlpatterns = [
     path('resources/<int:pk>/edit/', ResourceUpdateView.as_view(), name='edit-resource'),
     path('resources/<int:pk>/delete/', ResourceDeleteView.as_view(), name='delete-resource'),
     path('<int:professor_id>/resources/', ProfessorResourcesView.as_view(), name='professor-resources'),
+    path('speciality/<int:speciality_id>/levels/', LevelsBySpecialityView.as_view(), name='levels-by-speciality'),
 
 # 🔍 Search endpoints
     path('search/modules/', ModuleSearchView.as_view(), name='search-modules'),

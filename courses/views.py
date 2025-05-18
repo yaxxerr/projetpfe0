@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponse
 from rest_framework import generics, filters
 
@@ -323,3 +323,15 @@ class ProfessorResourcesView(APIView):
         resources = Resource.objects.filter(owner=professor)
         serializer = ResourceSerializer(resources, many=True, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class LevelsBySpecialityView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, speciality_id):
+        speciality = get_object_or_404(Speciality, id=speciality_id)
+        levels = Level.objects.filter(speciality=speciality)
+        serializer = LevelSerializer(levels, many=True)
+        return Response({
+            'speciality': speciality.name,
+            'levels': serializer.data
+        }, status=status.HTTP_200_OK)

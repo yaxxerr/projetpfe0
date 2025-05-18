@@ -275,18 +275,35 @@ class ProgramRecommendationListCreateView(generics.CreateAPIView):
             return HttpResponse("Tous les champs sont requis.", status=400)
 
         prompt = (
-            f"En tant qu'expert éducatif, génère un programme d'étude personnalisé en français pour un étudiant :\n"
-            f"- Temps d'étude par jour : {study_hours_per_day} heures\n"
-            f"- Nombre de jours jusqu'aux examens : {days_until_exam} jours\n"
-            f"- Préférence : {preferred_study_time}\n"
-            f"- Objectifs : {goals}\n\n"
-            "Le programme doit inclure :\n"
-            "- Les modules à étudier par jour\n"
-            "- Les chapitres spécifiques\n"
-            "- Des suggestions de quiz\n"
-            "- Conseils d'organisation\n"
-            "Présente-le proprement, clair et motivant !"
-        )
+    f"En tant qu'expert éducatif, génère un programme d'étude personnalisé en français pour un étudiant.\n\n"
+    f"Utilise impérativement cette structure, avec des heures précises et un ton motivant. Le texte retourné doit respecter exactement ce format et l’ordre des sections :\n\n"
+    f"## **Programme d'Étude Personnalisé pour les {days_until_exam} Jours avant les Examens**  \n\n"
+
+    f"### **Informations Personnelles**  \n"
+    f"- **Temps d'étude par jour** : {study_hours_per_day} heures  \n"
+    f"- **Nombre de jours jusqu'aux examens** : {days_until_exam} jours  \n"
+    f"- **Préférence horaire** : {preferred_study_time}  \n"
+    f"- **Objectif de note** : {goals}  \n\n"
+
+    f"### **Objectif du Programme**  \n"
+    f"Ce programme est conçu pour maximiser tes chances d'atteindre la note visée en répartissant efficacement ton temps d'étude sur {days_until_exam} jours. "
+    f"Tu te concentreras sur les modules et chapitres clés tout en incluant des révisions et des quiz pour évaluer tes progrès.  \n\n"
+
+    f"### **Planning Quotidien ({study_hours_per_day} heures par jour, selon ta préférence horaire)**  \n\n"
+    f"Génère maintenant pour chaque jour un bloc au format suivant :\n"
+    f"#### **Jour X : [Titre du jour]**  \n"
+    f"- **[heure début - heure fin]** : [Activité]  \n"
+    f"...\n\n"
+
+    f"Fais cela pour chaque jour, jusqu'au jour {days_until_exam}, avec un planning cohérent et équilibré.\n\n"
+
+    f"### **Conseils d'Organisation**  \n"
+    f"Fournis 4 à 6 conseils pratiques et applicables pour bien s'organiser pendant cette période de révision.\n\n"
+
+    f"### **Motivation**  \n"
+    f"Termine avec un paragraphe motivant, personnalisé, qui pousse l'étudiant à croire en ses capacités et à tenir le rythme jusqu'à l'examen. Sois positif et encourageant."
+)
+
 
         study_program_text = self.ask_openrouter(prompt)
 
