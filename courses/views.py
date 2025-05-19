@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponse
 from rest_framework import generics, filters
 
@@ -344,6 +344,7 @@ class ProfessorResourcesView(APIView):
         serializer = ResourceSerializer(resources, many=True, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
 class ChapterViewSet(viewsets.ModelViewSet):
     queryset = Chapter.objects.all()
     serializer_class = ChapterSerializer
@@ -376,3 +377,16 @@ class ChapterCreateView(APIView):
         chapter = Chapter.objects.create(name=name, module=module)
         serializer = ChapterSerializer(chapter)
         return Response(serializer.data, status=201)
+
+class LevelsBySpecialityView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, speciality_id):
+        speciality = get_object_or_404(Speciality, id=speciality_id)
+        levels = Level.objects.filter(speciality=speciality)
+        serializer = LevelSerializer(levels, many=True)
+        return Response({
+            'speciality': speciality.name,
+            'levels': serializer.data
+        }, status=status.HTTP_200_OK)
+
