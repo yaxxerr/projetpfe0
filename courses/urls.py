@@ -47,4 +47,5 @@ urlpatterns = [
     path('resources/access-requests/received/', views.ReceivedAccessRequestsView.as_view(), name='received-access-requests'),
     path('resources/access-requests/sent/', views.SentAccessRequestsView.as_view(), name='sent-access-requests'),
     path('resources/handle-request/<int:request_id>/', HandleAccessRequestView.as_view(), name='handle-access-request')
+    
 ]
