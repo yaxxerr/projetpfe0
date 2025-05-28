@@ -82,7 +82,7 @@ class Resource(models.Model):
 
     name = models.CharField(max_length=200)
     resource_type = models.CharField(max_length=20, choices=RESOURCE_TYPE_CHOICES)
-    link = models.URLField()
+    link = models.URLField(blank=True, null=True)
     chapter = models.ForeignKey('Chapter', related_name='resources', on_delete=models.CASCADE)
     owner = models.ForeignKey(User, related_name='owned_resources', on_delete=models.CASCADE)
     access_type = models.CharField(max_length=10, choices=ACCESS_TYPE_CHOICES, default='public')

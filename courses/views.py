@@ -335,3 +335,5 @@ class LevelsBySpecialityView(APIView):
             'speciality': speciality.name,
             'levels': serializer.data
         }, status=status.HTTP_200_OK)
+    
+    

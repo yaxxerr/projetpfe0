@@ -13,7 +13,7 @@ User = get_user_model()
 
 # 🧠 Resource Serializer with full access logic and user info
 class ResourceSerializer(serializers.ModelSerializer):
-    link = serializers.SerializerMethodField()
+    visible_link = serializers.SerializerMethodField()
     owner_name = serializers.SerializerMethodField()
     owner_username = serializers.CharField(source='owner.username', read_only=True)
     access_approved = serializers.SerializerMethodField()
@@ -22,9 +22,9 @@ class ResourceSerializer(serializers.ModelSerializer):
         model = Resource
         fields = [
             'id', 'chapter', 'name', 'resource_type', 'access_type', 'access_approved',
-            'link', 'created_at', 'owner', 'owner_username', 'owner_name'
+            'link', 'visible_link', 'created_at', 'owner', 'owner_username', 'owner_name'
         ]
-        read_only_fields = ['owner', 'created_at', 'access_approved', 'owner_username', 'owner_name']
+        read_only_fields = ['owner', 'created_at', 'access_approved', 'owner_username', 'owner_name', 'visible_link']
 
     def create(self, validated_data):
         request = self.context.get('request')
@@ -43,7 +43,8 @@ class ResourceSerializer(serializers.ModelSerializer):
             approved=True
         ).exists()
 
-    def get_link(self, obj):
+    # Sert pour l'affichage, respectant l'accès utilisateur
+    def get_visible_link(self, obj):
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         if obj.access_type == 'public':
