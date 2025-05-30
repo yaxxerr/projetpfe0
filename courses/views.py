@@ -7,6 +7,16 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Speciality, Level, Module, Chapter
 from .serializers import SpecialitySerializer, LevelSerializer,ResourceSerializer, ModuleSerializer, ChapterSerializer, UserSearchSerializer, ModuleSerializer, ChapterSerializer
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Chapter, Module
+from .serializers import ChapterSerializer
+from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
+
+
+
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAuthenticated
 from .models import Speciality, Level, Module, Chapter
@@ -39,7 +49,17 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 from django.db.models import Q
 from users.serializers import UserBasicSerializer
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status
 from rest_framework.generics import RetrieveUpdateAPIView
+
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.generics import ListAPIView
+from .models import Resource
+from .serializers import ResourceSerializer
+
 User = get_user_model()
 
 # 🌐 Public test
@@ -324,6 +344,40 @@ class ProfessorResourcesView(APIView):
         serializer = ResourceSerializer(resources, many=True, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+
+class ChapterViewSet(viewsets.ModelViewSet):
+    queryset = Chapter.objects.all()
+    serializer_class = ChapterSerializer
+
+    @action(detail=True, methods=['patch'], url_path='edit-name')
+    def edit_name(self, request, pk=None):
+        chapter = self.get_object()
+        new_name = request.data.get('name')
+        if not new_name:
+            return Response({'error': 'Nom requis'}, status=status.HTTP_400_BAD_REQUEST)
+        chapter.name = new_name
+        chapter.save()
+        return Response({'success': 'Nom mis à jour', 'name': chapter.name}, status=status.HTTP_200_OK)
+    
+
+    
+
+
+class ChapterCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        name = request.data.get("name")
+        module_id = request.data.get("module")
+
+        if not name or not module_id:
+            return Response({"error": "name et module sont requis."}, status=400)
+
+        module = get_object_or_404(Module, pk=module_id)
+        chapter = Chapter.objects.create(name=name, module=module)
+        serializer = ChapterSerializer(chapter)
+        return Response(serializer.data, status=201)
+
 class LevelsBySpecialityView(APIView):
     permission_classes = [AllowAny]
 
@@ -335,5 +389,3 @@ class LevelsBySpecialityView(APIView):
             'speciality': speciality.name,
             'levels': serializer.data
         }, status=status.HTTP_200_OK)
-    
-    

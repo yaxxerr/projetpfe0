@@ -1,3 +1,4 @@
+import re
 from rest_framework import serializers
 from .models import (
     Resource,
@@ -11,7 +12,10 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
+
 # 🧠 Resource Serializer with full access logic and user info
+
+
 class ResourceSerializer(serializers.ModelSerializer):
     visible_link = serializers.SerializerMethodField()
     owner_name = serializers.SerializerMethodField()
@@ -25,6 +29,14 @@ class ResourceSerializer(serializers.ModelSerializer):
             'link', 'visible_link', 'created_at', 'owner', 'owner_username', 'owner_name'
         ]
         read_only_fields = ['owner', 'created_at', 'access_approved', 'owner_username', 'owner_name', 'visible_link']
+
+    def validate_link(self, value):
+        # Validation souple : accepte tout ce qui commence par un schéma suivi de "://"
+        if re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*://', value):
+            return value
+        raise serializers.ValidationError(
+            "Entrez une URL valide commençant par un schéma (ex: http://, https://, file://, ftp://, mailto://, etc.)"
+        )
 
     def create(self, validated_data):
         request = self.context.get('request')
@@ -56,6 +68,8 @@ class ResourceSerializer(serializers.ModelSerializer):
 
     def get_owner_name(self, obj):
         return obj.owner.username if obj.owner else None
+
+
 
 
 # 🔍 For student/professor search bars
