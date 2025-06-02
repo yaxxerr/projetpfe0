@@ -104,7 +104,7 @@ class PerformanceStatsView(APIView):
             return "Analyse indisponible pour le moment."
 
 # OpenRouter config
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "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")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "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")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_MODEL = "meta-llama/llama-4-maverick:free"
 
